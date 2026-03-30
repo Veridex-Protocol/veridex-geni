@@ -1,0 +1,538 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model FrontierPasskeyCredential {
+  credentialId        String                @id @map("credential_id")
+  keyHash             String                @unique @map("key_hash")
+  publicKeyX          String                @map("public_key_x")
+  publicKeyY          String                @map("public_key_y")
+  username            String?
+  displayName         String?               @map("display_name")
+  passkeyLabel        String?               @map("passkey_label")
+  operatorWallet      String                @map("operator_wallet")
+  vaultAddress        String                @map("vault_address")
+  lastAuthenticatedAt DateTime?             @map("last_authenticated_at")
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+  metadata            Json                  @default("{}")
+  authSessions        FrontierAuthSession[]
+
+  @@index([operatorWallet], map: "frontier_passkey_credentials_wallet_idx")
+  @@map("frontier_passkey_credentials")
+}
+
+model FrontierAuthSession {
+  id            String                    @id
+  credentialId  String                    @map("credential_id")
+  operatorWallet String                   @map("operator_wallet")
+  operatorName  String                    @map("operator_name")
+  vaultAddress  String                    @map("vault_address")
+  sessionOrigin String                    @map("session_origin")
+  userAgent     String?                   @map("user_agent")
+  ipAddress     String?                   @map("ip_address")
+  status        String                    @default("active")
+  createdAt     DateTime                  @default(now()) @map("created_at")
+  lastSeenAt    DateTime                  @default(now()) @map("last_seen_at")
+  expiresAt     DateTime                  @map("expires_at")
+  metadata      Json                      @default("{}")
+  credential    FrontierPasskeyCredential @relation(fields: [credentialId], references: [credentialId], onDelete: Cascade)
+
+  @@index([operatorWallet, createdAt(sort: Desc)], map: "frontier_auth_sessions_wallet_idx")
+  @@map("frontier_auth_sessions")
+}
+
+model FrontierMissionSnapshot {
+  missionId      String   @id @map("mission_id")
+  operatorWallet String   @map("operator_wallet")
+  credentialId   String?  @map("credential_id")
+  status         String
+  activeStage    String   @map("active_stage")
+  title          String
+  objective      String
+  template       String
+  stateJson      Json     @map("state_json")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([operatorWallet, updatedAt(sort: Desc)], map: "frontier_mission_snapshots_wallet_idx")
+  @@map("frontier_mission_snapshots")
+}
+
+model FrontierEvidenceFile {
+  id          String   @id
+  missionId   String?  @map("mission_id")
+  artifactName String  @map("artifact_name")
+  artifactType String  @map("artifact_type")
+  provider    String
+  network     String?
+  status      String   @default("draft")
+  cid         String?
+  uri         String?
+  txHash      String?  @map("tx_hash")
+  contentJson Json?    @map("content_json")
+  contentText String?  @map("content_text")
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([missionId, createdAt(sort: Desc)], map: "frontier_evidence_files_mission_idx")
+  @@map("frontier_evidence_files")
+}
+
+model FrontierMemoryRecord {
+  id             String   @id
+  missionId      String   @map("mission_id")
+  recordType     String   @map("record_type")
+  cid            String?
+  provider       String
+  network        String?
+  ucanDelegation String?  @map("ucan_delegation")
+  payload        Json
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([missionId, createdAt(sort: Desc)], map: "frontier_memory_records_mission_idx")
+  @@map("frontier_memory_records")
+}
+
+model FrontierAgentRegistration {
+  missionId          String   @id @map("mission_id")
+  agentId            String   @map("agent_id")
+  onchainAgentId     String?  @map("onchain_agent_id")
+  erc8004Identity    String   @map("erc8004_identity")
+  registry           String
+  network            String
+  registrationTxHash String   @map("registration_tx_hash")
+  explorerUrl        String   @map("explorer_url")
+  registrationFileUri String  @map("registration_file_uri")
+  canonicalUai       String   @map("canonical_uai")
+  live               Boolean  @default(false)
+  payload            Json
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("frontier_agent_registrations")
+}
+
+model FrontierFeedbackEvent {
+  id           String   @id
+  missionId    String   @map("mission_id")
+  agentId      String?  @map("agent_id")
+  rating       Decimal  @db.Decimal(5, 2)
+  notes        String
+  txHash       String   @map("tx_hash")
+  explorerUrl  String   @map("explorer_url")
+  updatedScore Decimal  @map("updated_score") @db.Decimal(8, 2)
+  delta        Decimal  @db.Decimal(8, 2)
+  live         Boolean  @default(false)
+  payload      Json
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("frontier_feedback_events")
+}
+
+model FrontierAuditEvent {
+  id            String   @id
+  eventType     String   @map("event_type")
+  action        String
+  source        String
+  status        String
+  requestId     String?  @map("request_id")
+  correlationId String?  @map("correlation_id")
+  missionId     String?  @map("mission_id")
+  sessionId     String?  @map("session_id")
+  credentialId  String?  @map("credential_id")
+  operatorWallet String? @map("operator_wallet")
+  actorType     String?  @map("actor_type")
+  actorId       String?  @map("actor_id")
+  resource      String?
+  durationMs    Int?     @map("duration_ms")
+  errorCode     String?  @map("error_code")
+  errorMessage  String?  @map("error_message")
+  metadata      Json     @default("{}")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([missionId, createdAt(sort: Desc)], map: "frontier_audit_events_mission_idx")
+  @@index([requestId], map: "frontier_audit_events_request_idx")
+  @@map("frontier_audit_events")
+}
+
+model FrontierLogEvent {
+  id        String   @id
+  missionId String   @map("mission_id")
+  timestamp DateTime
+  level     String
+  actor     String
+  stage     String
+  title     String
+  message   String
+  code      String?
+  tags      Json     @default("[]")
+  detail    Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([missionId, timestamp(sort: Desc)], map: "frontier_log_events_mission_idx")
+  @@map("frontier_log_events")
+}
+
+model FrontierMissionStageEvent {
+  id             String   @id
+  missionId      String   @map("mission_id")
+  stage          String
+  previousStage  String?  @map("previous_stage")
+  previousStatus String?  @map("previous_status")
+  nextStatus     String   @map("next_status")
+  actorType      String?  @map("actor_type")
+  reason         String?
+  detail         Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([missionId, createdAt(sort: Desc)], map: "frontier_mission_stage_events_mission_idx")
+  @@map("frontier_mission_stage_events")
+}
+
+model FrontierToolInvocation {
+  id            String   @id
+  missionId     String?  @map("mission_id")
+  sessionId     String?  @map("session_id")
+  credentialId  String?  @map("credential_id")
+  operatorWallet String? @map("operator_wallet")
+  toolName      String   @map("tool_name")
+  operation     String
+  endpoint      String?
+  provider      String?
+  attempt       Int      @default(1)
+  status        String
+  requestPayload Json?   @map("request_payload")
+  responsePayload Json?  @map("response_payload")
+  live          Boolean  @default(false)
+  durationMs    Int?     @map("duration_ms")
+  errorCode     String?  @map("error_code")
+  errorMessage  String?  @map("error_message")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([missionId, createdAt(sort: Desc)], map: "frontier_tool_invocations_mission_idx")
+  @@map("frontier_tool_invocations")
+}
+
+model FrontierPolicyEvaluation {
+  id            String   @id
+  missionId     String?  @map("mission_id")
+  sessionId     String?  @map("session_id")
+  credentialId  String?  @map("credential_id")
+  operatorWallet String? @map("operator_wallet")
+  stage         String?
+  action        String
+  decision      String
+  ruleName      String?  @map("rule_name")
+  threshold     Json     @default("{}")
+  observed      Json     @default("{}")
+  rationale     String?
+  blocked       Boolean  @default(false)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([missionId, createdAt(sort: Desc)], map: "frontier_policy_evaluations_mission_idx")
+  @@map("frontier_policy_evaluations")
+}
+
+model FrontierPaymentEventRecord {
+  id               String   @id
+  missionId        String?  @map("mission_id")
+  sessionId        String?  @map("session_id")
+  credentialId     String?  @map("credential_id")
+  operatorWallet   String?  @map("operator_wallet")
+  challengeId      String?  @map("challenge_id")
+  merchant         String
+  resource         String
+  protocol         String
+  amountUsd        Decimal  @map("amount_usd") @db.Decimal(12, 2)
+  network          String?
+  recipient        String?
+  txHash           String?  @map("tx_hash")
+  counterpartyTrust Decimal? @map("counterparty_trust") @db.Decimal(8, 2)
+  status           String
+  live             Boolean  @default(false)
+  detail           Json     @default("{}")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([missionId, createdAt(sort: Desc)], map: "frontier_payment_events_mission_idx")
+  @@map("frontier_payment_events")
+}
+
+model FrontierAuthCeremony {
+  id             String   @id
+  ceremonyType   String   @map("ceremony_type")
+  status         String
+  credentialId   String?  @map("credential_id")
+  keyHash        String?  @map("key_hash")
+  username       String?
+  displayName    String?  @map("display_name")
+  passkeyLabel   String?  @map("passkey_label")
+  operatorWallet String?  @map("operator_wallet")
+  vaultAddress   String?  @map("vault_address")
+  knownCredential Boolean? @map("known_credential")
+  sessionId      String?  @map("session_id")
+  requestId      String?  @map("request_id")
+  correlationId  String?  @map("correlation_id")
+  userAgent      String?  @map("user_agent")
+  ipAddress      String?  @map("ip_address")
+  rpId           String?  @map("rp_id")
+  origin         String?
+  durationMs     Int?     @map("duration_ms")
+  errorCode      String?  @map("error_code")
+  errorMessage   String?  @map("error_message")
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([credentialId, createdAt(sort: Desc)], map: "frontier_auth_ceremonies_credential_idx")
+  @@map("frontier_auth_ceremonies")
+}
+
+model FrontierExternalOperation {
+  id             String   @id
+  missionId      String?  @map("mission_id")
+  operationType  String   @map("operation_type")
+  provider       String
+  resource       String
+  network        String?
+  cid            String?
+  uri            String?
+  txHash         String?  @map("tx_hash")
+  explorerUrl    String?  @map("explorer_url")
+  live           Boolean  @default(false)
+  status         String
+  requestPayload Json?    @map("request_payload")
+  responsePayload Json?   @map("response_payload")
+  errorMessage   String?  @map("error_message")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([missionId, createdAt(sort: Desc)], map: "frontier_external_operations_mission_idx")
+  @@map("frontier_external_operations")
+}
+
+model FrontierNotification {
+  id          String   @id
+  missionId   String   @map("mission_id")
+  kind        String
+  title       String
+  message     String
+  timestamp   DateTime
+  actionLabel String?  @map("action_label")
+  href        String?
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([missionId, updatedAt(sort: Desc)], map: "frontier_notifications_mission_idx")
+  @@map("frontier_notifications")
+}
+
+model FrontierDispute {
+  id                String   @id
+  missionId         String   @map("mission_id")
+  title             String
+  severity          String
+  status            String
+  violatedPolicy    String   @map("violated_policy")
+  description       String
+  recommendedAction String   @map("recommended_action")
+  resolution        String?
+  metadata          Json     @default("{}")
+  createdAt         DateTime @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([missionId, updatedAt(sort: Desc)], map: "frontier_disputes_mission_idx")
+  @@map("frontier_disputes")
+}
+
+model FrontierDisputeEvent {
+  id         String   @id
+  disputeId  String   @map("dispute_id")
+  missionId  String   @map("mission_id")
+  action     String
+  status     String
+  resolution String?
+  actorType  String?  @map("actor_type")
+  detail     Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([disputeId, createdAt(sort: Desc)], map: "frontier_dispute_events_dispute_idx")
+  @@map("frontier_dispute_events")
+}
+
+model FrontierRuntimeError {
+  id            String   @id
+  missionId     String?  @map("mission_id")
+  sessionId     String?  @map("session_id")
+  credentialId  String?  @map("credential_id")
+  operatorWallet String? @map("operator_wallet")
+  scope         String
+  errorName     String?  @map("error_name")
+  errorMessage  String   @map("error_message")
+  errorCode     String?  @map("error_code")
+  stackExcerpt  String?  @map("stack_excerpt")
+  recoverable   Boolean  @default(true)
+  detail        Json     @default("{}")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([missionId, createdAt(sort: Desc)], map: "frontier_runtime_errors_mission_idx")
+  @@map("frontier_runtime_errors")
+}
+
+model FrontierJobRun {
+  id         String   @id
+  missionId  String?  @map("mission_id")
+  sessionId  String?  @map("session_id")
+  jobName    String   @map("job_name")
+  status     String
+  attempt    Int      @default(1)
+  startedAt  DateTime @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+  durationMs Int?     @map("duration_ms")
+  detail     Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([missionId, createdAt(sort: Desc)], map: "frontier_job_runs_mission_idx")
+  @@map("frontier_job_runs")
+}
+
+model FrontierStateVersion {
+  id            String   @id
+  missionId     String   @map("mission_id")
+  operatorWallet String  @map("operator_wallet")
+  credentialId  String?  @map("credential_id")
+  status        String
+  activeStage   String   @map("active_stage")
+  title         String
+  stateJson     Json     @map("state_json")
+  changeSummary Json     @default("{}") @map("change_summary")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([missionId, createdAt(sort: Desc)], map: "frontier_state_versions_mission_idx")
+  @@map("frontier_state_versions")
+}
+
+model FrontierOperatorAction {
+  id             String   @id
+  missionId      String?  @map("mission_id")
+  sessionId      String?  @map("session_id")
+  credentialId   String?  @map("credential_id")
+  operatorWallet String?  @map("operator_wallet")
+  action         String
+  targetType     String?  @map("target_type")
+  targetId       String?  @map("target_id")
+  outcome        String
+  detail         Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([missionId, createdAt(sort: Desc)], map: "frontier_operator_actions_mission_idx")
+  @@map("frontier_operator_actions")
+}
+
+model FrontierExecutionRail {
+  missionId      String   @id @map("mission_id")
+  rail           String
+  status         String
+  selectorLabel  String   @map("selector_label")
+  scheduledFor   DateTime? @map("scheduled_for")
+  nextRunAt      DateTime? @map("next_run_at")
+  live           Boolean  @default(false)
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("frontier_execution_rails")
+}
+
+model FrontierFlowSchedule {
+  missionId       String   @id @map("mission_id")
+  scheduleId      String?  @map("schedule_id")
+  cadence         String
+  scheduledFor    DateTime? @map("scheduled_for")
+  nextRunAt       DateTime? @map("next_run_at")
+  retryPolicy     String   @map("retry_policy")
+  status          String
+  txHash          String?  @map("tx_hash")
+  explorerUrl     String?  @map("explorer_url")
+  handlerAddress  String?  @map("handler_address")
+  network         String?
+  live            Boolean  @default(false)
+  payload         Json     @default("{}")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("frontier_flow_schedules")
+}
+
+model FrontierStarknetPrivateIntent {
+  missionId          String   @id @map("mission_id")
+  label              String
+  commitmentHash     String?  @map("commitment_hash")
+  nullifier          String?
+  revealWindowHours  Int      @map("reveal_window_hours")
+  status             String
+  txHash             String?  @map("tx_hash")
+  revealTxHash       String?  @map("reveal_tx_hash")
+  explorerUrl        String?  @map("explorer_url")
+  network            String?
+  live               Boolean  @default(false)
+  payload            Json     @default("{}")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("frontier_starknet_private_intents")
+}
+
+model FrontierZamaConfidentialPolicy {
+  missionId         String   @id @map("mission_id")
+  status            String
+  summary           String
+  policyHandle      String?  @map("policy_handle")
+  aclGrantId        String?  @map("acl_grant_id")
+  evaluatorAddress  String?  @map("evaluator_address")
+  encryptedFields   Json     @default("[]") @map("encrypted_fields")
+  network           String?
+  live              Boolean  @default(false)
+  payload           Json     @default("{}")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("frontier_zama_confidential_policies")
+}
+
+model FrontierChainTransaction {
+  id          String   @id
+  missionId   String   @map("mission_id")
+  rail        String
+  chain       String
+  network     String
+  action      String
+  status      String
+  txHash      String   @map("tx_hash")
+  explorerUrl String?  @map("explorer_url")
+  live        Boolean  @default(false)
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([missionId, createdAt(sort: Desc)], map: "frontier_chain_transactions_mission_idx")
+  @@map("frontier_chain_transactions")
+}
+
+model FrontierEncryptedPolicyHandle {
+  id         String   @id
+  missionId  String   @map("mission_id")
+  fieldName  String   @map("field_name")
+  handle     String
+  aclGrantId String?  @map("acl_grant_id")
+  network    String?
+  live       Boolean  @default(false)
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([missionId, createdAt(sort: Desc)], map: "frontier_encrypted_policy_handles_mission_idx")
+  @@map("frontier_encrypted_policy_handles")
+}
