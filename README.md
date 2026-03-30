@@ -1,257 +1,217 @@
 # Veridex FrontierGuard
 
-FrontierGuard is a production-shaped control plane for autonomous missions.
+**Portable trust. Bounded autonomy. Verifiable execution.**
 
-It gives an operator one workspace to:
+Veridex FrontierGuard is an operator workspace for launching, monitoring, and verifying autonomous missions.
 
-- authenticate with a passkey
-- launch a bounded mission with policy and budget controls
-- execute paid actions over x402
-- attach ERC-8004 identity and reputation receipts
-- retain logs, manifests, and evidence bundles
-- expose machine-readable endpoints that other agents can discover and pay for
+It combines passkey-based operator control, bounded execution policies, machine payments, portable agent identity, and durable evidence into a single control plane that both humans and agents can use.
 
-This app is the PL_Genesis hackathon implementation of the **best-bet sponsor stack first**:
+## Overview
 
-- `Existing Code`
-- `Agent Only`
-- `Agents With Receipts — 8004`
-- `AI & Robotics`
-- `Infrastructure & Digital Rights`
-- `Crypto`
+Autonomous systems are getting better at planning and acting, but most production environments still lack four things:
 
-Secondary rails such as Starknet, Filecoin, and Storacha are included as supporting capabilities, but the core product story stays focused on:
+- clear operator authorization
+- hard execution boundaries
+- trustworthy payment and service access
+- receipts that survive after the task is done
 
-**portable trust + bounded autonomy + verifiable execution**
+FrontierGuard addresses that gap with one workflow:
 
-## What The App Does
+1. an operator authenticates with a passkey
+2. a mission is launched with explicit budget and policy constraints
+3. the runtime discovers and executes task steps
+4. paid actions are routed through x402-compatible payment flows
+5. identity and feedback are attached through ERC-8004
+6. logs, memory, and evidence are retained as exportable artifacts
 
-The authenticated workspace is organized around one operator flow:
+The result is a control plane that feels like a business product, not a loose collection of protocol demos.
 
-1. `Login`
-   Passkey-backed operator authentication with stored credential recovery and session cookies.
-2. `Launch`
-   Create a mission with execution scope, budget limits, allowed tools, and trust thresholds.
-3. `Execution`
-   Run the mission, request premium paid data, enforce policy, and track mission state.
-4. `Receipts`
-   Inspect x402 settlement receipts, ERC-8004 identity/reputation proofs, and evidence artifacts.
-5. `Settings`
-   Check readiness, machine-access endpoints, runtime state, and storage posture.
+## What The Product Does
 
-## Current Product Scope
+### Core capabilities
 
-### Core path
+- **Passkey operator auth**
+  Creates a durable operator session without introducing password management overhead.
+- **Bounded mission launch**
+  Missions are created with scope, budget, trust thresholds, tool limits, and chain limits.
+- **Execution control**
+  The system tracks mission stages from authorization through final verification.
+- **Paid service access**
+  Premium services can require payment before returning high-value data or execution results.
+- **Portable trust**
+  Agent identity and feedback are represented with ERC-8004-compatible records and receipts.
+- **Evidence vault**
+  The system groups receipts, manifests, logs, memory, and exportable mission artifacts in one place.
+- **Machine access**
+  Agent-friendly endpoints are exposed for discovery, payment, and runtime interoperability.
 
-- Passkey registration and login using `@veridex/sdk`
-- Session persistence in Postgres
-- Enterprise runtime wallet resolution from stored passkey credentials
-- x402 paid service execution using `@veridex/agentic-payments`
-- ERC-8004 registration and feedback submission
-- Structured mission logs, artifacts, receipts, and audit records
-- Production-style dark operator workspace
+### Supporting rails
 
-### Secondary modules
+The main operating surface centers on the immediate execution path. Additional rails are implemented as supporting modules:
 
-- Starknet private-intent rail
-- Filecoin-backed artifact pinning
-- Storacha-backed shared memory
-- Flow scheduled rail
-- Zama confidential policy rail
+- **Starknet** for private intent commitments
+- **Filecoin** for durable evidence anchoring
+- **Storacha** for shared mission memory
+- **Flow** for scheduled execution
+- **Zama** for confidential policy paths
 
-These remain secondary in the UI until the core sponsor proof path is fully live.
+These are intentionally secondary to the core trust-and-execution loop.
 
-## Tech Stack
+## User Experience
 
-- `Next.js 16`
-- `React 19`
-- `TypeScript`
-- `Bun`
-- `Prisma`
-- `Postgres`
-- `ethers`
-- `starknet`
-- `@veridex/sdk`
-- `@veridex/agentic-payments`
+FrontierGuard is designed as a desktop-first enterprise workspace with a consistent operator shell.
 
-## Project Structure
+### Main workflow
 
-- [`src/app`](/Users/mannyuncharted/Documents/gigs/veridex/hackathon/plgenesis/src/app)
-  App routes, authenticated workspace screens, and API routes.
-- [`src/components/frontierguard`](/Users/mannyuncharted/Documents/gigs/veridex/hackathon/plgenesis/src/components/frontierguard)
-  Shared shell, navigation, status hooks, auth context, and mission runtime provider.
-- [`src/lib/frontierguard`](/Users/mannyuncharted/Documents/gigs/veridex/hackathon/plgenesis/src/lib/frontierguard)
-  Mission models, mock/default state, browser helpers, integrations, session resolution, and repository access.
-- [`prisma`](/Users/mannyuncharted/Documents/gigs/veridex/hackathon/plgenesis/prisma)
-  Prisma schema and migrations.
-- [`contracts`](/Users/mannyuncharted/Documents/gigs/veridex/hackathon/plgenesis/contracts)
-  Hackathon-side contract artifacts and related deployment assets.
-- [`scripts/base-sepolia-wallet.mjs`](/Users/mannyuncharted/Documents/gigs/veridex/hackathon/plgenesis/scripts/base-sepolia-wallet.mjs)
-  Helper to generate or derive the Base Sepolia signer used for the live sponsor path.
+- **Login**
+  Authenticate with a passkey and establish an operator session.
+- **Overview**
+  Inspect mission health, readiness, trust state, and recent activity.
+- **Launch**
+  Define the mission, constraints, budget, and execution mode.
+- **Execution**
+  Observe live stage progression, current tasks, incidents, and payment activity.
+- **Receipts**
+  Inspect payment receipts, identity proofs, and evidence artifacts.
+- **Settings**
+  Review runtime readiness, machine-access endpoints, and integration status.
 
-## Running The App
+## How It Works
 
-### Prerequisites
+### Mission lifecycle
 
-- `bun`
-- `node`
-- a Postgres database
-
-### Install
-
-```bash
-cd /Users/mannyuncharted/Documents/gigs/veridex/hackathon/plgenesis
-bun install
+```mermaid
+flowchart TD
+    A["Operator authenticates with passkey"] --> B["FrontierGuard creates bounded session"]
+    B --> C["Mission is launched with policy, budget, and trust thresholds"]
+    C --> D["Agent identity is registered and mission manifest is prepared"]
+    D --> E["Runtime enters discover and plan stages"]
+    E --> F["Execution requests service or tool access"]
+    F --> G["Policy + trust gate checks tool, chain, budget, and counterparty"]
+    G -->|Allowed| H["Paid or unpaid action executes"]
+    G -->|Blocked| I["Violation is logged and mission is escalated"]
+    H --> J["Receipts, logs, and memory are written back to mission state"]
+    J --> K["Verification stage compiles final outputs"]
+    K --> L["Evidence bundle and mission receipts become exportable"]
 ```
 
-### Environment
+### System architecture
 
-Copy [`.env.example`](/Users/mannyuncharted/Documents/gigs/veridex/hackathon/plgenesis/.env.example) to `.env.local` and fill the values you need.
+```mermaid
+flowchart LR
+    subgraph Operator["Operator Surface"]
+        UI["Next.js Workspace UI"]
+        Auth["Passkey Auth + Session"]
+    end
 
-```bash
-cp /Users/mannyuncharted/Documents/gigs/veridex/hackathon/plgenesis/.env.example /Users/mannyuncharted/Documents/gigs/veridex/hackathon/plgenesis/.env.local
+    subgraph ControlPlane["FrontierGuard Control Plane"]
+        API["App Router API Layer"]
+        Runtime["Mission Runtime Provider"]
+        Policy["Policy + Budget Gate"]
+        Receipts["Receipts + Evidence Compiler"]
+    end
+
+    subgraph Data["Persistence"]
+        PG["Postgres / Prisma"]
+        Audit["Audit + Activity Journal"]
+    end
+
+    subgraph Protocols["External Integrations"]
+        VSDK["Veridex SDK"]
+        X402["x402 / Agentic Payments"]
+        ERC["ERC-8004 Registries"]
+        Storacha["Storacha Memory"]
+        Filecoin["Filecoin / Pinning"]
+        Starknet["Starknet Private Intent"]
+    end
+
+    UI --> Auth
+    UI --> API
+    Auth --> API
+    API --> Runtime
+    Runtime --> Policy
+    Runtime --> Receipts
+    API --> PG
+    API --> Audit
+    Runtime --> VSDK
+    Runtime --> X402
+    Runtime --> ERC
+    Runtime --> Storacha
+    Receipts --> Filecoin
+    Runtime --> Starknet
 ```
 
-### Prisma
+## Architecture
 
-```bash
-bunx prisma generate
-bunx prisma migrate deploy
-```
+### Frontend
 
-### Dev
+- **Next.js App Router**
+  Drives the operator workspace, mission screens, and API routes.
+- **Shared Frontier shell**
+  Provides consistent navigation, status surfaces, and authenticated workspace behavior.
+- **Mission runtime provider**
+  Maintains operator state, mission state, logs, artifacts, and stage progression.
 
-```bash
-bun run dev
-```
+### Backend
 
-### Production build
+- **App Router API routes**
+  Handle passkey auth, mission persistence, status checks, payments, and integration calls.
+- **Repository layer**
+  Persists mission, auth, audit, payment, and evidence records.
+- **Integration modules**
+  Encapsulate protocol-specific behavior for x402, ERC-8004, Starknet, Storacha, and Filecoin.
 
-```bash
-bun run build
-```
+### Persistence
 
-## Environment Modes
+- **Postgres**
+  Stores credentials, sessions, mission snapshots, evidence metadata, and audit history.
+- **Prisma**
+  Defines schema and migrations for the app’s durable records.
 
-### Demo
+## Key Components
 
-Use this when you want a deterministic fallback path and do not want to claim live onchain proofs.
+| Area | Responsibility |
+|---|---|
+| `src/app` | UI routes and API routes |
+| `src/components/frontierguard` | Shared shell, auth context, runtime provider, status hooks |
+| `src/lib/frontierguard` | Types, mission state, integrations, repository helpers |
+| `prisma` | Database schema and migrations |
+| `scripts/base-sepolia-wallet.mjs` | Utility for generating or deriving a Base Sepolia signer |
 
-```env
-FRONTIER_MODE=demo
-```
+## Protocol Integrations
 
-### Hybrid
+### Veridex SDK
 
-Use this when you want the app to run with partial live infra but still tolerate non-live paths.
+Used for passkey credential handling and operator-side identity/session foundations.
 
-```env
-FRONTIER_MODE=hybrid
-```
+### Agentic Payments / x402
 
-### Live
+Used to handle machine-payment flows for premium services and payment-gated execution.
 
-Use this when you want the app to fail honestly unless it can produce real sponsor-grade receipts.
+### ERC-8004
 
-```env
-FRONTIER_MODE=live
-```
+Used to register agent identity and attach post-mission feedback to a portable trust surface.
 
-In `live` mode, the app now rejects demo payment signatures and blocks the core mission path when x402 or ERC-8004 requirements are not truly configured.
+### Storacha
 
-## Minimal Live Sponsor Path
+Used for shared memory and mission handoff state.
 
-The fastest serious live path is:
+### Filecoin
 
-- passkey auth
-- Base Sepolia x402 payment verification
-- Base Sepolia ERC-8004 registration + feedback
-- Postgres persistence
+Used for evidence pinning and durable artifact linkage.
 
-Minimum envs:
+### Starknet
 
-```env
-FRONTIER_MODE=live
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+Used for private-intent commitments in the secondary privacy rail.
 
-DATABASE_URL=postgresql://...
+## Data Model
 
-FRONTIER_RELAYER_URL=...
-FRONTIER_RELAYER_API_KEY=...
-
-FRONTIER_FACILITATOR_URL=https://x402.org/facilitator
-
-FRONTIER_PAYWALL_NETWORK=base-sepolia
-FRONTIER_PAYWALL_RECIPIENT=0x...
-FRONTIER_PAYWALL_RPC_URL=https://your-base-sepolia-rpc
-FRONTIER_PAYWALL_EXPLORER_BASE_URL=https://sepolia.basescan.org
-
-FRONTIER_ERC8004_ENABLED=true
-FRONTIER_ERC8004_TESTNET=true
-FRONTIER_ERC8004_PRIVATE_KEY=0x...
-FRONTIER_ERC8004_RPC_URL=https://your-base-sepolia-rpc
-FRONTIER_ERC8004_EXPLORER_BASE_URL=https://sepolia.basescan.org
-```
-
-## Generate The Base Sepolia Signer
-
-To generate a burner wallet for the live hackathon path:
-
-```bash
-bun run wallet:base-sepolia
-```
-
-This prints:
-
-- a fresh private key for `FRONTIER_ERC8004_PRIVATE_KEY`
-- the matching wallet address for `FRONTIER_PAYWALL_RECIPIENT`
-
-To derive the address from an existing key:
-
-```bash
-bun run wallet:base-sepolia -- --private-key 0xYOUR_PRIVATE_KEY
-```
-
-## Scripts
-
-- `bun run dev`
-  Start the Next dev server with webpack.
-- `bun run build`
-  Production build.
-- `bun run start`
-  Start the production server.
-- `bun run lint`
-  Run ESLint.
-- `bun run wallet:base-sepolia`
-  Generate or derive the Base Sepolia signer/paywall recipient.
-- `bun run prisma:generate`
-  Generate Prisma client.
-- `bun run prisma:migrate:deploy`
-  Apply database migrations.
-- `bun run prisma:migrate:status`
-  Inspect migration state.
-
-## Machine Access
-
-The workspace exposes discovery and payment-related endpoints for agent clients:
-
-- `/.well-known/agent-registration.json`
-- `/.well-known/ucp`
-- `/.well-known/acp-checkout`
-- `/.well-known/ap2-mandate`
-- `/api/frontier/agent/premium-yield`
-- `/api/frontier/status`
-
-These are surfaced inside the Settings page so agent operators can inspect what is actually routable and what still needs infra.
-
-## Database And Audit Model
-
-The app persists:
+FrontierGuard persists more than just the latest mission snapshot. The system also records:
 
 - passkey credentials
 - auth sessions
-- mission snapshots
-- evidence files
+- mission state
+- evidence artifacts
 - memory records
 - agent registrations
 - feedback events
@@ -260,28 +220,88 @@ The app persists:
 - policy evaluations
 - tool invocations
 - runtime errors
-- operator actions
-- state versions
+- disputes and resolutions
+- state versions and operator actions
 
-This gives the app a durable audit trail instead of only in-memory demo state.
+This is what makes the control plane reviewable after the task completes.
 
-## Related Docs
+## Machine-Readable Endpoints
 
-- [`MULTI_BOUNTY_MATRIX.md`](/Users/mannyuncharted/Documents/gigs/veridex/hackathon/plgenesis/MULTI_BOUNTY_MATRIX.md)
-- [`USER_FLOW.md`](/Users/mannyuncharted/Documents/gigs/veridex/hackathon/plgenesis/USER_FLOW.md)
-- [`EXECUTION_BOARD_SPONSOR_EXPANSION.md`](/Users/mannyuncharted/Documents/gigs/veridex/hackathon/plgenesis/EXECUTION_BOARD_SPONSOR_EXPANSION.md)
-- [`TODO.md`](/Users/mannyuncharted/Documents/gigs/veridex/hackathon/plgenesis/TODO.md)
+The app exposes endpoints that agents or runtime clients can consume directly:
 
-## Honest Status
+- `/.well-known/agent-registration.json`
+- `/.well-known/ucp`
+- `/.well-known/acp-checkout`
+- `/.well-known/ap2-mandate`
+- `/api/frontier/agent/premium-yield`
+- `/api/frontier/status`
 
-This is no longer a static mockup. It is a working product shell with real auth, persistence, and sponsor-path integration code.
+These endpoints are also surfaced inside the settings screen so operators can inspect what is available.
 
-What still decides whether it is judge-ready is not the README or the UI polish. It is whether the live sponsor path is actually configured and demonstrated end to end with:
+## Local Development
 
-- a successful passkey-authenticated mission launch
-- a real x402 settlement receipt
-- a real ERC-8004 registration transaction
-- a real ERC-8004 feedback transaction
-- clean explorer links and receipts in the vault
+### Requirements
 
-That is the path this project is optimized for.
+- `bun`
+- `node`
+- `postgres`
+
+### Install
+
+```bash
+cd /Users/mannyuncharted/Documents/gigs/veridex/hackathon/plgenesis
+bun install
+```
+
+### Configure environment
+
+```bash
+cp .env.example .env.local
+```
+
+### Generate Prisma client and apply migrations
+
+```bash
+bunx prisma generate
+bunx prisma migrate deploy
+```
+
+### Start the app
+
+```bash
+bun run dev
+```
+
+### Build for production
+
+```bash
+bun run build
+```
+
+
+
+## Scripts
+
+| Command | Purpose |
+|---|---|
+| `bun run dev` | Start the local development server |
+| `bun run build` | Build the production app |
+| `bun run start` | Start the production server |
+| `bun run lint` | Run ESLint |
+| `bun run wallet:base-sepolia` | Generate or derive Base Sepolia signer values |
+| `bun run prisma:generate` | Generate Prisma client |
+| `bun run prisma:migrate:deploy` | Apply migrations |
+| `bun run prisma:migrate:status` | Check migration status |
+
+
+## Status
+
+FrontierGuard is implemented as a real application, not just a design mock:
+
+- the operator UI is functional
+- passkey auth and session persistence are wired
+- mission state is persisted
+- receipts and audit records are stored
+- protocol integrations exist for the primary trust-and-payment path
+
+The default repo does **not** ship fully live credentials. To run the full testnet proof path, the required Base Sepolia and relayer configuration must be supplied through `.env.local`.
