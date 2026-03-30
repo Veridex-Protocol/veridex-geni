@@ -94,7 +94,6 @@ function createPaywallConfig(request: Request): AppRouterPaywallConfig {
     network: config.paywall.network,
     facilitatorUrl: config.paywall.facilitatorUrl,
     fallbackFacilitatorUrl: config.paywall.fallbackFacilitatorUrl,
-    timeoutMs: 5000,
     description: config.paywall.description,
     protocols: ["x402", "ucp", "acp", "ap2"],
     corsHeaders: {
