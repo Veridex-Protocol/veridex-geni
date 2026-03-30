@@ -6,6 +6,7 @@ import { FrontierShell } from "@/components/frontierguard/frontier-shell";
 import { MetricCard } from "@/components/frontierguard/metric-card";
 import { CodePanel } from "@/components/frontierguard/code-panel";
 import { EmptyState, StatusPill, WorkspaceSection } from "@/components/frontierguard/workspace-primitives";
+import { WithHelp } from "@/components/frontierguard/help-sys";
 import { useFrontierGuard } from "@/components/frontierguard/provider";
 
 export default function SharedMemoryTaskBoardPage() {
@@ -28,22 +29,26 @@ export default function SharedMemoryTaskBoardPage() {
       title="Task board and shared mission context"
       description="Keep multi-agent state, handoffs, and durable memory attached to the mission without distracting from the primary runtime path."
       actions={
-        <>
-          <button
-            type="button"
-            onClick={() => void copyArtifact("summary")}
-            className="workspace-button-secondary rounded-xl px-4 py-2 text-sm font-semibold"
-          >
-            Copy Summary
-          </button>
-          <button
-            type="button"
-            onClick={() => exportArtifact("summary")}
-            className="workspace-button-primary rounded-xl px-4 py-2 text-sm font-semibold"
-          >
-            Export State
-          </button>
-        </>
+        <div className="flex items-center gap-2">
+          <WithHelp id="mem-copy" text="Copy the latest task graph and multi-agent memory state to the clipboard.">
+            <button
+              type="button"
+              onClick={() => void copyArtifact("summary")}
+              className="workspace-button-secondary rounded-xl px-4 py-2 text-sm font-semibold hover:-translate-y-0.5 transition-transform"
+            >
+              Copy Summary
+            </button>
+          </WithHelp>
+          <WithHelp id="mem-export" text="Download a JSON export of the current deterministic task ledger.">
+            <button
+              type="button"
+              onClick={() => exportArtifact("summary")}
+              className="workspace-button-primary rounded-xl px-4 py-2 text-sm font-semibold hover:-translate-y-0.5 transition-transform"
+            >
+              Export State
+            </button>
+          </WithHelp>
+        </div>
       }
     >
       <div className="space-y-6">
@@ -59,14 +64,18 @@ export default function SharedMemoryTaskBoardPage() {
             eyebrow="Task Board"
             title={mission.title}
             actions={
-              <>
-                <Link href="/mission/memory/handoff" className="workspace-button-secondary inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold">
-                  Handoff timeline
-                </Link>
-                <Link href="/mission/memory/history" className="workspace-button-secondary inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold">
-                  Record ledger
-                </Link>
-              </>
+              <div className="flex items-center gap-2">
+                <WithHelp id="mem-handoff" text="View the multi-agent state timeline and worker transitions.">
+                  <Link href="/mission/memory/handoff" className="workspace-button-secondary inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold hover:-translate-y-0.5 transition-transform">
+                    Handoff timeline
+                  </Link>
+                </WithHelp>
+                <WithHelp id="mem-history" text="Browse the full append-only storage ledger of context entries.">
+                  <Link href="/mission/memory/history" className="workspace-button-secondary inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold hover:-translate-y-0.5 transition-transform">
+                    Record ledger
+                  </Link>
+                </WithHelp>
+              </div>
             }
           >
             <div className="grid gap-4 xl:grid-cols-4">

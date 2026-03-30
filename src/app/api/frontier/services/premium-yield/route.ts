@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyFrontierPaywall } from "@/lib/frontierguard/integrations/paywall";
 import { getFrontierConfig } from "@/lib/frontierguard/integrations/config";
 import { getEnterpriseAgentSnapshot } from "@/lib/frontierguard/integrations/runtime";
+import { runPremiumYieldResearch } from "@/lib/frontierguard/ai/research";
 import { durationMsSince, getRequestContext } from "@/lib/frontierguard/observability";
 import { resolveFrontierSessionLocator } from "@/lib/frontierguard/session";
 import {
@@ -11,33 +12,6 @@ import {
 } from "@/lib/frontierguard/repository";
 
 const RESOURCE = "/api/frontier/services/premium-yield";
-
-const DATA = [
-  {
-    asset: "USDC",
-    protocol: "Aave V3",
-    apy: "8.42%",
-    riskScore: 0.72,
-    liquidity: "$4.2B",
-    trustScore: 96.4,
-  },
-  {
-    asset: "USDC",
-    protocol: "Compound V3",
-    apy: "8.91%",
-    riskScore: 0.84,
-    liquidity: "$2.8B",
-    trustScore: 91.8,
-  },
-  {
-    asset: "DAI",
-    protocol: "Morpho Blue",
-    apy: "11.14%",
-    riskScore: 1.1,
-    liquidity: "$611M",
-    trustScore: 83.2,
-  },
-];
 
 export async function POST(request: Request) {
   const startedAt = Date.now();
@@ -79,6 +53,12 @@ export async function POST(request: Request) {
       session: null,
       identity: null,
     }));
+    const research = await runPremiumYieldResearch({
+      objective: body.objective,
+      query:
+        body.objective ||
+        "Current stablecoin yield opportunities suitable for treasury deployment with risk-aware normalization.",
+    });
 
     if (
       config.mode === "live" &&
@@ -123,6 +103,9 @@ export async function POST(request: Request) {
         metadata: {
           paymentTxHash: verification.payment?.txHash,
           live: verification.payment?.live ?? false,
+          grounded: research.grounded,
+          sourceCount: research.sources.length,
+          model: research.modelVersion ?? research.model,
         },
       }),
     ]);
@@ -143,8 +126,16 @@ export async function POST(request: Request) {
           : proofLevel === "live_unverified"
             ? "Payment path executed live but settlement verification is incomplete."
             : "Payment path executed in demo or hybrid mode without a live settlement proof.",
+      model: research.model,
+      modelVersion: research.modelVersion,
+      grounded: research.grounded,
+      generatedAt: research.generatedAt,
+      researchQuery: research.query,
+      researchSummary: research.summary,
+      searchQueries: research.searchQueries,
+      sources: research.sources,
       runtime,
-      data: DATA,
+      data: research.data,
     }, {
       headers: verification.payment?.settlementHeader
         ? {

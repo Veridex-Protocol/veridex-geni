@@ -13,6 +13,7 @@ import {
   StatusPill,
   WorkspaceSection,
 } from "@/components/frontierguard/workspace-primitives";
+import { WithHelp } from "@/components/frontierguard/help-sys";
 import { useFrontierGuard } from "@/components/frontierguard/provider";
 
 function compactHash(value?: string | null, head = 12, tail = 8): string {
@@ -42,25 +43,29 @@ export default function ReceiptsEvidencePage() {
   return (
     <FrontierShell
       eyebrow="Receipts Vault"
-      title="Proofs, evidence, and exportable mission bundles"
-      description="Keep the operator story simple: payment receipts, ERC-8004 trust proofs, and evidence artifacts stay grouped under one mission instead of being scattered across sponsor surfaces."
+      title="Proofs and Execution Evidence"
+      description="Keep the operator story simple: payment receipts, ERC-8004 trust proofs, and evidence artifacts stay grouped under one mission instead of being scattered."
       actions={
-        <>
-          <button
-            type="button"
-            onClick={() => void copyArtifact("receipt")}
-            className="workspace-button-secondary rounded-xl px-4 py-2 text-sm font-semibold"
-          >
-            Copy Receipt
-          </button>
-          <button
-            type="button"
-            onClick={() => exportArtifact("receipt")}
-            className="workspace-button-primary rounded-xl px-4 py-2 text-sm font-semibold"
-          >
-            Export Bundle
-          </button>
-        </>
+        <div className="flex items-center gap-2">
+          <WithHelp id="receipts-copy" text="Copy the latest cryptographic receipts bundle to clipboard for external verification.">
+            <button
+              type="button"
+              onClick={() => void copyArtifact("receipt")}
+              className="workspace-button-secondary rounded-xl px-4 py-2 text-sm font-semibold hover:-translate-y-0.5 transition-transform"
+            >
+              Copy Receipt
+            </button>
+          </WithHelp>
+          <WithHelp id="receipts-export" text="Download a fully verifiable ZIP evidence bundle for enterprise auditors.">
+            <button
+              type="button"
+              onClick={() => exportArtifact("receipt")}
+              className="workspace-button-primary rounded-xl px-4 py-2 text-sm font-semibold hover:-translate-y-0.5 transition-transform"
+            >
+              Export Bundle
+            </button>
+          </WithHelp>
+        </div>
       }
     >
       <div className="space-y-6">

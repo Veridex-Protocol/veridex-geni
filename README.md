@@ -1,10 +1,48 @@
 # Veridex FrontierGuard
 
-**Portable trust. Bounded autonomy. Verifiable execution.**
+**Portable trust. Bounded autonomy. Verifiable execution.** 
+*A submission for the PL_Genesis: Frontiers of Collaboration Hackathon.*
 
-Veridex FrontierGuard is an operator workspace for launching, monitoring, and verifying autonomous missions.
+---
 
-It combines passkey-based operator control, bounded execution policies, machine payments, portable agent identity, and durable evidence into a single control plane that both humans and agents can use.
+## Hackathon Submission Details
+
+**Track Alignment & Focus Area:** Crypto & AI (Agents With Receipts — 8004)
+**Submission Type:** Fresh Code
+
+### What it is
+Veridex FrontierGuard is a fully verifiable operator workspace and control plane for launching, monitoring, and auditing autonomous AI missions. It gives agents a secure environment to execute tasks while providing human operators with hard boundaries, passkey auth, and cryptographic receipts.
+
+### The Problem it solves
+Autonomous systems are rapidly advancing, but current production environments lack the trust and safety primitives needed for real-world deployment. Specifically:
+1. **Unverifiable Actions:** It is nearly impossible to cryptographically prove what an agent did, why it did it, and what tools it used.
+2. **Lack of Identity & Reputation:** Agents lack portable, on-chain identities (like ERC-8004), meaning they cannot build reputation or safely transact with other agents.
+3. **Black Box Execution:** Multi-agent architectures lose state when restarted, and human operators have no way to audit execution logs, memory, or payment receipts in a unified way. 
+
+### How it solves it
+FrontierGuard standardizes agent execution by strictly defining boundaries before launch:
+1. **Passkey Operator Auth:** Secures the session without passwords.
+2. **ERC-8004 Agent Identity:** Agents are registered on-chain, linking their actions, reputation, and feedback to a portable identity.
+3. **Execution Rails & Policy Gates:** Agents run inside a bounded policy envelope (e.g., spending limits, trusted counterparties). Any paid actions map to x402-compatible agentic payment flows.
+4. **Durable Evidence:** Every mission compiles a cryptographic receipt bundle containing logs, decisions, and memory, automatically pinned to decentralized storage (Filecoin/Storacha).
+
+### Sponsored Bounties Integrated
+- **Ethereum Foundation (Agents With Receipts - 8004):** Implemented an autonomous architecture where agents register ERC-8004 identities via on-chain registries, linking them to operator wallets and tracking post-mission reputation feedback. Includes `agent.json` and `agent_log.json` outputs.
+- **Filecoin & Storacha:** Leverages Filecoin pinning and Storacha for persistent agent memory, task graphs, and durable execution evidence pinning (ensuring agents don't have "amnesia").
+- **Flow:** Implements consumer DeFi rails and scheduled transaction workflows for agent settlements.
+- **Zama:** Utilizes fully homomorphic encryption (FHE) for confidential policy paths and private thresholds.
+- **Starknet:** Secures private intent commitments and protected routing strategies.
+
+---
+
+## Why this is a Top "Fresh Code" Contender
+Built entirely from scratch for the PL_Genesis Hackathon, Veridex FrontierGuard represents a massive technical and UX undertaking:
+- **Complex Agent State Machine:** We didn't just build a smart contract—we built a full React Context-driven state machine (`FrontierGuardProvider`) that autonomously transitions agents through exact lifecycle stages: `authorize -> register -> discover -> plan -> execute -> verify -> finalize`. 
+- **Production-Ready Enterprise UX:** We avoided the "clunky dev tool" aesthetic by implementing a bespoke, highly responsive dark-glass UI using customized Tailwind CSS primitives, interactive tooltips (`WithHelp` context system), and dynamic mission layout grids.
+- **Deep Protocol Modeling:** The application correctly models the intricate differences between Starknet private intents, Zama confidential FHE thresholds, and Flow scheduled transactions, formatting the data perfectly into the required DevSpot `agent.json` payloads without breaking the unified UI.
+- **Strictly Typed Architecture:** The entire repository is built on Next.js 14 App Router with flawless TypeScript models for the autonomous mission logs, execution boundaries, and agentic receipts (`src/lib/frontierguard/*`).
+
+---
 
 ## Overview
 

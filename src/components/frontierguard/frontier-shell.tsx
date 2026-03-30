@@ -10,6 +10,8 @@ import { FrontierWorkspaceMobileNav } from "@/components/frontierguard/workspace
 import { FrontierWorkspaceSidebar } from "@/components/frontierguard/workspace-sidebar";
 import { useFrontierAuth } from "@/components/frontierguard/auth-provider";
 import { useFrontierGuard } from "@/components/frontierguard/provider";
+import { useHelp } from "@/components/frontierguard/help-sys";
+import { HelpCircle } from "lucide-react";
 
 function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -31,6 +33,7 @@ export function FrontierShell({
   const pathname = usePathname();
   const auth = useFrontierAuth();
   const { mission } = useFrontierGuard();
+  const { isHelpActive, toggleHelp } = useHelp();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -132,6 +135,13 @@ export function FrontierShell({
 
                 <div className="flex flex-wrap items-center gap-3 xl:justify-end">
                   {actions}
+                  <button
+                    onClick={toggleHelp}
+                    className={`workspace-button-secondary inline-flex items-center justify-center rounded-xl p-2.5 transition-colors ${isHelpActive ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30 ring-2 ring-cyan-500/50' : 'text-zinc-400'}`}
+                    title="Toggle Help System"
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                  </button>
                   {pathname !== "/settings" ? (
                     <Link
                       href="/settings"

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { FrontierAuthProvider } from "@/components/frontierguard/auth-provider";
 import { FrontierGuardProvider } from "@/components/frontierguard/provider";
+import { HelpProvider } from "@/components/frontierguard/help-sys";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,9 +21,11 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
       </head>
       <body className="min-h-screen antialiased">
-        <FrontierAuthProvider>
-          <FrontierGuardProvider>{children}</FrontierGuardProvider>
-        </FrontierAuthProvider>
+        <HelpProvider>
+          <FrontierAuthProvider>
+            <FrontierGuardProvider>{children}</FrontierGuardProvider>
+          </FrontierAuthProvider>
+        </HelpProvider>
       </body>
     </html>
   );

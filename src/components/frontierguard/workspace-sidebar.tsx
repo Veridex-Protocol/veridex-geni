@@ -87,23 +87,23 @@ export function FrontierWorkspaceSidebar({
           ) : null}
         </div>
 
-        <div className="border-b border-zinc-800/80 px-3 py-4">
-          <div className="workspace-subpanel rounded-2xl p-3">
-            <div className="flex items-center justify-between gap-3">
-              {!collapsed && (
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+        {!collapsed && (
+          <div className="border-b border-zinc-800/80 px-3 py-4">
+            <div className="workspace-subpanel rounded-2xl p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 mb-1">
                     Active Rail
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-white">
+                  <p className="text-sm font-semibold text-white truncate">
                     {mission.execution.selectorLabel}
                   </p>
                 </div>
-              )}
-              <RailBadge rail={mission.execution.rail} compact={collapsed} />
+                <RailBadge rail={mission.execution.rail} compact />
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           <div className="space-y-1">

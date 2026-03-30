@@ -9,6 +9,9 @@ import {
   Fingerprint,
   ShieldCheck,
   Wallet,
+  Activity,
+  Layers,
+  Lock,
 } from "lucide-react";
 import { FrontierShell } from "@/components/frontierguard/frontier-shell";
 import { MetricCard } from "@/components/frontierguard/metric-card";
@@ -17,11 +20,11 @@ import { useFrontierStatus } from "@/components/frontierguard/use-frontier-statu
 import {
   EmptyState,
   FieldRow,
-  ReadinessStrip,
   StatusPill,
   WorkspaceSection,
 } from "@/components/frontierguard/workspace-primitives";
 import { useFrontierGuard } from "@/components/frontierguard/provider";
+import { WithHelp } from "@/components/frontierguard/help-sys";
 
 function formatTimestamp(value: string): string {
   return new Date(value).toLocaleString();
@@ -46,430 +49,286 @@ export default function OverviewCommandCenterPage() {
   const activeTasks = mission.tasks.filter((task) => task.status !== "completed");
   const latestLogs = mission.logs.slice(-5).reverse();
   const pinnedArtifacts = mission.artifacts.filter((artifact) => artifact.status === "pinned").length;
-  const readinessItems = [
-    {
-      label: "Core Path",
-      description: readiness.corePathReady
-        ? "Passkey session, runtime wallet, x402, and ERC-8004 are aligned."
-        : "Complete passkey session and sponsor-path infra before live operator use.",
-      status: readiness.corePathReady ? "ready" : state.session.authenticated ? "warning" : "blocked",
-    },
-    {
-      label: "Runtime Wallet",
-      description: readiness.runtimeWalletBound
-        ? "Server runtime can bind this operator to enterprise execution."
-        : "Waiting for an authenticated passkey-backed operator session.",
-      status: readiness.runtimeWalletBound ? "ready" : "waiting",
-    },
-    {
-      label: "x402 Payments",
-      description: readiness.x402Ready
-        ? "Payment-gated services are ready for live settlement and receipts."
-        : "Paywall path is not fully configured yet.",
-      status: readiness.x402Ready ? "ready" : "warning",
-    },
-    {
-      label: "ERC-8004 Trust",
-      description: readiness.erc8004Ready
-        ? "Identity and reputation writes are ready for explorer-backed proofs."
-        : "Trust receipts are still blocked on write access.",
-      status: readiness.erc8004Ready ? "ready" : "warning",
-    },
-    {
-      label: "Secondary Rails",
-      description: readiness.secondaryRailsReady
-        ? "Optional Starknet or storage modules can be attached when needed."
-        : "Starknet, Filecoin, and Storacha remain gated until configured.",
-      status: readiness.secondaryRailsReady ? "ready" : "waiting",
-    },
-  ] as const;
 
   return (
     <FrontierShell
-      eyebrow="Operator Workspace"
-      title="Mission control for bounded autonomous execution"
-      description="Launch, monitor, and verify one production-grade mission flow: passkey-authenticated control, x402 settlement, ERC-8004 trust, and durable receipts."
+      eyebrow="Mission Command Center"
+      title="FrontierGuard Operations"
+      description="Centralized view for your agentic fleets. Launch missions, monitor telemetry, and review cryptographic proofs of execution."
       actions={
-        <>
-          <Link
-            href="/mission/launch"
-            className="workspace-button-primary inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
-          >
-            Launch Mission
-          </Link>
-          <button
-            type="button"
-            onClick={() => void advanceMission()}
-            disabled={state.loading || mission.status === "completed"}
-            className="workspace-button-secondary rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
-          >
-            Run Next Stage
-          </button>
-          <button
-            type="button"
-            onClick={() => void runAutopilot()}
-            disabled={state.loading || mission.status === "completed"}
-            className="workspace-button-secondary rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
-          >
-            Autopilot
-          </button>
-          <button
-            type="button"
-            onClick={resetDemo}
-            className="workspace-button-secondary rounded-xl px-4 py-2 text-sm font-semibold"
-          >
-            Reset
-          </button>
-        </>
+        <div className="flex items-center gap-2">
+          <WithHelp id="btn-launch" text="Launch a completely new mission with a defined workflow and budget.">
+            <Link
+              href="/mission/launch"
+              className="workspace-button-primary inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold hover:bg-zinc-100 transition-colors"
+            >
+              Launch Mission
+            </Link>
+          </WithHelp>
+          <WithHelp id="btn-next" text="Manually advance the current mission to its next logical stage.">
+            <button
+              type="button"
+              onClick={() => void advanceMission()}
+              disabled={state.loading || mission.status === "completed"}
+              className="workspace-button-secondary bg-zinc-800/80 hover:bg-zinc-700/80 border border-zinc-700/50 rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50 transition-colors"
+            >
+              Next Stage
+            </button>
+          </WithHelp>
+          <WithHelp id="btn-auto" text="Enable Autopilot to let the system execute the remaining stages automatically.">
+            <button
+              type="button"
+              onClick={() => void runAutopilot()}
+              disabled={state.loading || mission.status === "completed"}
+              className="workspace-button-secondary bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:shadow-[0_0_20px_rgba(6,182,212,0.3)] border border-cyan-500/30 rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50 transition-all active:scale-95"
+            >
+              Autopilot
+            </button>
+          </WithHelp>
+          <WithHelp id="btn-reset" text="Reset the demo environment and wipe current mission state.">
+            <button
+              type="button"
+              onClick={resetDemo}
+              className="workspace-button-secondary bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/30 rounded-xl px-4 py-2 text-sm font-semibold transition-colors"
+            >
+              Reset
+            </button>
+          </WithHelp>
+        </div>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-[1400px] mx-auto animate-in fade-in duration-500">
         {state.error ? (
-          <div className="rounded-2xl border border-red-500/18 bg-red-500/8 px-5 py-4 text-sm text-red-200">
+          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-200">
             {state.error}
           </div>
         ) : null}
 
-        <ReadinessStrip items={readinessItems.map((item) => ({ ...item }))} />
-
+        {/* Elevated top row: Core metrics & Alert */}
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            label="Mission Status"
-            value={mission.status.toUpperCase()}
-            helper={`${progressPct}% lifecycle progress`}
-            tone={mission.status === "blocked" ? "danger" : mission.status === "completed" ? "success" : "primary"}
-          />
-          <MetricCard
-            label="Budget Remaining"
-            value={`$${remainingBudgetUsd.toFixed(2)}`}
-            helper={`$${mission.budget.spentUsd.toFixed(2)} already committed`}
-            tone="success"
-          />
-          <MetricCard
-            label="Trust Score"
-            value={`${mission.identity.trustScore.toFixed(1)} / 100`}
-            helper={`Agent: ${mission.identity.agentName}`}
-            tone="primary"
-          />
-          <MetricCard
-            label="Evidence Vault"
-            value={`${pinnedArtifacts}/${mission.artifacts.length}`}
-            helper="Artifacts pinned and recoverable"
-            tone={pinnedArtifacts > 0 ? "success" : "warning"}
-          />
+          <WithHelp id="metric-status" text="Displays the current lifecycle state of the entire fleet.">
+            <MetricCard
+              label="Mission Status"
+              value={mission.status.replace("_", " ").toUpperCase()}
+              helper={`${progressPct}% lifecycle progress`}
+              tone={mission.status === "blocked" ? "danger" : mission.status === "completed" ? "success" : "primary"}
+            />
+          </WithHelp>
+          <WithHelp id="metric-budget" text="Remaining operational budget bound by policy constraints.">
+            <MetricCard
+              label="Budget Remaining"
+              value={`$${remainingBudgetUsd.toFixed(2)}`}
+              helper={`$${mission.budget.spentUsd.toFixed(2)} deployed`}
+              tone="success"
+            />
+          </WithHelp>
+          <WithHelp id="metric-trust" text="Real-time computation of trust based on ERC-8004 reputation receipts.">
+            <MetricCard
+              label="Trust Score"
+              value={`${mission.identity.trustScore.toFixed(1)} / 100`}
+              helper={`Agent: ${mission.identity.agentName}`}
+              tone="primary"
+            />
+          </WithHelp>
+          <WithHelp id="metric-evidence" text="Vault containing zero-knowledge execution proofs and immutable artifacts.">
+            <MetricCard
+              label="Evidence Vault"
+              value={`${pinnedArtifacts}/${mission.artifacts.length}`}
+              helper="Pinned cryptographic receipts"
+              tone={pinnedArtifacts > 0 ? "success" : "warning"}
+            />
+          </WithHelp>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
-          <WorkspaceSection
-            eyebrow="Active Mission"
-            title={mission.title}
-            description={mission.objective}
-            actions={
-              <>
-                <StatusPill
-                  label={mission.status}
-                  tone={
-                    mission.status === "completed"
-                      ? "ready"
-                      : mission.status === "blocked"
-                        ? "blocked"
-                        : "waiting"
-                  }
-                />
-                <Link
-                  href="/mission/active"
-                  className="workspace-button-secondary inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
-                >
-                  Open Execution
-                </Link>
-              </>
-            }
-          >
-            <div className="space-y-6">
-              <StageStrip stages={mission.stages} />
-
-              <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-                <div className="workspace-subpanel rounded-3xl p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
-                        Current Stage
-                      </p>
-                      <h3 className="mt-2 text-lg font-semibold text-white">{activeStage.label}</h3>
-                    </div>
-                    <StatusPill
-                      label={activeStage.status}
-                      tone={
-                        activeStage.status === "completed"
-                          ? "ready"
-                          : activeStage.status === "blocked"
-                            ? "blocked"
-                            : activeStage.status === "active"
-                              ? "waiting"
-                              : "neutral"
-                      }
-                    />
-                  </div>
-                  <p className="mt-4 text-sm leading-6 text-zinc-400">{activeStage.summary}</p>
-                  <div className="mt-5 flex flex-wrap gap-3">
-                    <Link
-                      href="/mission/launch"
-                      className="workspace-button-primary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
-                    >
-                      Reconfigure Mission
-                    </Link>
-                    <Link
-                      href="/receipts"
-                      className="workspace-button-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
-                    >
-                      Open Receipts
-                    </Link>
-                  </div>
+        {openDispute && (
+          <WithHelp id="operator-queue" text="Urgent operator interventions required by smart policy anomalies.">
+            <div className="rounded-3xl border border-red-500/30 bg-gradient-to-r from-red-500/10 to-red-500/5 p-6 flex items-center justify-between backdrop-blur-sm shadow-[0_0_30px_rgba(239,68,68,0.1)]">
+              <div className="flex items-center gap-4">
+                <div className="bg-red-500/20 p-3 rounded-2xl ring-1 ring-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+                  <CircleAlert className="h-6 w-6 text-red-400" />
                 </div>
-
-                <div className="workspace-subpanel rounded-3xl p-5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
-                    Primary Mission Path
-                  </p>
-                  <div className="mt-4 space-y-4">
-                    <div className="flex items-start gap-3">
-                      <Fingerprint className="mt-0.5 h-4 w-4 text-emerald-400" />
-                      <p className="text-sm leading-6 text-zinc-300">
-                        Passkey-backed operator session controls irreversible actions.
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <Wallet className="mt-0.5 h-4 w-4 text-cyan-400" />
-                      <p className="text-sm leading-6 text-zinc-300">
-                        x402 paid services settle through the runtime wallet under budget bounds.
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-400" />
-                      <p className="text-sm leading-6 text-zinc-300">
-                        ERC-8004 identity and reputation produce portable trust receipts for the run.
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <FileCheck2 className="mt-0.5 h-4 w-4 text-cyan-400" />
-                      <p className="text-sm leading-6 text-zinc-300">
-                        Evidence artifacts stay attached to the mission and ready for export.
-                      </p>
-                    </div>
-                  </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-red-200">{openDispute.title}</h3>
+                  <p className="mt-1 text-sm text-red-200/70">{openDispute.description}</p>
                 </div>
               </div>
-            </div>
-          </WorkspaceSection>
-
-          <div className="space-y-6">
-            <WorkspaceSection eyebrow="Operator Queue" title="Immediate attention">
-              {openDispute ? (
-                <div className="workspace-subpanel rounded-3xl border border-red-500/18 bg-red-500/8 p-5">
-                  <div className="flex items-start gap-3">
-                    <CircleAlert className="mt-0.5 h-5 w-5 text-red-300" />
-                    <div>
-                      <p className="font-semibold text-red-200">{openDispute.title}</p>
-                      <p className="mt-2 text-sm leading-6 text-red-100/80">
-                        {openDispute.description}
-                      </p>
-                    </div>
-                  </div>
-                  <Link
-                    href="/dispute"
-                    className="workspace-button-danger mt-4 inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
-                  >
-                    Review Escalation
-                  </Link>
-                </div>
-              ) : (
-                <EmptyState
-                  title="No operator escalations"
-                  description="The mission is still within its policy bounds. Simulate an incident from Execution to demo manual intervention."
-                />
-              )}
-            </WorkspaceSection>
-
-            <WorkspaceSection eyebrow="Proof Posture" title="Trust and runtime snapshot">
-              <dl>
-                <FieldRow label="ERC-8004 Identity" value={mission.identity.erc8004Identity} />
-                <FieldRow
-                  label="Registration Tx"
-                  value={mission.identity.registrationTxHash.slice(0, 18).concat("...")}
-                  tone="success"
-                />
-                <FieldRow label="Runtime Wallet" value={state.session.operatorWallet} />
-                <FieldRow
-                  label="Machine Access"
-                  value={loading ? "Checking readiness..." : readiness.corePathReady ? "Ready" : "Needs configuration"}
-                  tone={readiness.corePathReady ? "success" : "warning"}
-                />
-              </dl>
-            </WorkspaceSection>
-          </div>
-        </section>
-
-        <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-          <WorkspaceSection
-            eyebrow="Task Board"
-            title="Current operator workload"
-            actions={
               <Link
-                href="/mission/memory"
-                className="workspace-button-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
+                href="/dispute"
+                className="workspace-button-danger rounded-xl px-6 py-3 text-sm font-bold shadow-lg shadow-red-500/20 hover:scale-[1.02] transition-transform active:scale-95"
               >
-                Open Memory
+                Resolve Incident
               </Link>
-            }
-          >
-            <div className="space-y-3">
-              {activeTasks.length > 0 ? (
-                activeTasks.slice(0, 4).map((task) => (
-                  <div key={task.id} className="workspace-subpanel rounded-3xl p-4">
-                    <div className="flex items-start justify-between gap-3">
+            </div>
+          </WithHelp>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-3 xl:grid-cols-4">
+          {/* Main Execution View (consumes 2-3 columns depending on screen size) */}
+          <div className="lg:col-span-2 xl:col-span-3 space-y-6">
+            <WithHelp id="active-execution" text="Live visualization of the multi-agent pipeline and progress through configured stages.">
+              <WorkspaceSection
+                eyebrow="Execution Pipeline"
+                title={mission.title}
+                description={mission.objective}
+                actions={
+                  <Link
+                    href="/mission/active"
+                    className="workspace-button-secondary text-sm px-4 py-2 rounded-xl transition-colors hover:bg-zinc-800"
+                  >
+                    View Timeline
+                  </Link>
+                }
+              >
+                <div className="space-y-6">
+                  <div className="bg-zinc-950/60 p-5 rounded-3xl border border-zinc-800/80 shadow-inner">
+                    <StageStrip stages={mission.stages} />
+                  </div>
+                  
+                  <div className="relative overflow-hidden workspace-subpanel rounded-3xl p-6 border-zinc-800 shadow-lg">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-bl-[100px] pointer-events-none" />
+                    <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-semibold text-white">{task.title}</p>
-                        <p className="mt-2 text-sm leading-6 text-zinc-400">{task.description}</p>
+                        <p className="text-[10px] uppercase tracking-[0.15em] text-cyan-400/80 mb-2 font-bold">Active Operation</p>
+                        <h3 className="text-2xl font-light text-white tracking-tight">{activeStage.label}</h3>
                       </div>
                       <StatusPill
-                        label={task.status.replaceAll("_", " ")}
+                        label={activeStage.status.toUpperCase()}
                         tone={
-                          task.status === "blocked"
-                            ? "blocked"
-                            : task.status === "in_progress"
-                              ? "waiting"
-                              : task.status === "completed"
-                                ? "ready"
-                                : "neutral"
+                          activeStage.status === "completed" ? "ready"
+                          : activeStage.status === "blocked" ? "blocked"
+                          : activeStage.status === "active" ? "waiting" : "neutral"
                         }
                       />
                     </div>
-                    <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-zinc-500">
-                      <span>{task.owner}</span>
-                      <span>${task.costUsd.toFixed(2)} estimated</span>
-                      {task.counterparty ? <span>{task.counterparty}</span> : null}
-                    </div>
+                    <p className="mt-4 text-sm text-zinc-400 leading-relaxed max-w-2xl">{activeStage.summary}</p>
                   </div>
-                ))
-              ) : (
-                <EmptyState
-                  title="No active tasks yet"
-                  description="The planner will open task cards once the mission reaches discovery and planning."
-                />
-              )}
-            </div>
-          </WorkspaceSection>
 
-          <WorkspaceSection
-            eyebrow="Latest Activity"
-            title="Recent mission events"
-            actions={
-              <Link
-                href="/logs"
-                className="workspace-button-secondary inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
-              >
-                Open Logs
-              </Link>
-            }
-          >
-            <div className="space-y-3">
-              {latestLogs.map((entry) => (
-                <div key={entry.id} className="workspace-subpanel rounded-3xl p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold text-white">{entry.title}</p>
-                        <StatusPill
-                          label={entry.stage}
-                          tone={
-                            entry.level === "error"
-                              ? "blocked"
-                              : entry.level === "warning"
-                                ? "warning"
-                                : entry.level === "success"
-                                  ? "ready"
-                                  : "neutral"
-                          }
-                        />
-                      </div>
-                      <p className="mt-2 text-sm leading-6 text-zinc-400">{entry.message}</p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2 text-xs text-zinc-500">
-                      <span>{formatTimestamp(entry.timestamp)}</span>
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {notifications.length > 0 ? (
-                <div className="workspace-subpanel rounded-3xl p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
-                    Latest Notifications
-                  </p>
-                  <div className="mt-3 space-y-3">
-                    {notifications.slice(0, 2).map((notification) => (
-                      <div key={notification.id} className="rounded-2xl border border-white/6 bg-black/15 p-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="font-medium text-zinc-100">{notification.title}</p>
-                            <p className="mt-1 text-sm text-zinc-400">{notification.message}</p>
+                  <WithHelp id="task-queue" text="A ledger of atomic tasks executed by agent workers in the current stage.">
+                    <div className="space-y-4">
+                      <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Atomic Execution Graph</p>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {activeTasks.length > 0 ? (
+                          activeTasks.slice(0, 4).map((task) => (
+                            <div key={task.id} className="group workspace-subpanel rounded-2xl p-5 border border-zinc-800/80 hover:border-cyan-500/30 hover:bg-cyan-950/10 transition-all duration-300">
+                              <div className="flex justify-between items-start mb-3">
+                                <p className="font-medium text-zinc-100 text-sm line-clamp-1 group-hover:text-cyan-100 transition-colors">{task.title}</p>
+                                <StatusPill label={task.status.replace("_", " ")} tone={task.status === "completed" ? "ready" : "waiting"} />
+                              </div>
+                              <p className="text-xs text-zinc-500 line-clamp-2 mb-4 group-hover:text-zinc-400 transition-colors">{task.description}</p>
+                              <div className="flex justify-between items-center text-[10px] text-zinc-600 font-mono pt-3 border-t border-zinc-800/50">
+                                <span className="flex items-center gap-1.5"><Bot className="w-3.5 h-3.5"/> {task.owner}</span>
+                                <span className="text-cyan-500/70 bg-cyan-500/10 px-2 py-0.5 rounded">${task.costUsd.toFixed(2)}</span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="col-span-2">
+                            <EmptyState
+                              title="No pending tasks"
+                              description="Agents are currently idle or planning next steps."
+                            />
                           </div>
-                          <StatusPill
-                            label={notification.kind}
-                            tone={
-                              notification.kind === "critical"
-                                ? "blocked"
-                                : notification.kind === "success"
-                                  ? "ready"
-                                  : "neutral"
-                            }
-                          />
-                        </div>
+                        )}
                       </div>
-                    ))}
+                    </div>
+                  </WithHelp>
+                </div>
+              </WorkspaceSection>
+            </WithHelp>
+
+            <WithHelp id="live-telemetry" text="Real-time unified log stream tracking state mutations, warnings, and success events across the pipeline.">
+              <WorkspaceSection
+                eyebrow="Telemetry Log"
+                title="Live System Feed"
+                actions={
+                  <Link href="/logs" className="text-xs font-mono text-cyan-500 hover:text-cyan-400 transition-colors flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-cyan-500/10">
+                    [EXPAND LOGS] <ArrowUpRight className="w-3 h-3" />
+                  </Link>
+                }
+              >
+                <div className="bg-zinc-950 rounded-2xl p-5 border border-zinc-800/80 shadow-inner overflow-hidden font-mono text-[11px] leading-relaxed relative">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-cyan-500/20 to-transparent" />
+                  {latestLogs.map((entry) => (
+                    <div key={entry.id} className="grid grid-cols-[70px_1fr] gap-4 py-2 border-b border-zinc-900/50 last:border-0 hover:bg-zinc-900/40 transition-colors rounded-lg px-2 -mx-2">
+                      <div className="text-zinc-600 self-center">{new Date(entry.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' })}</div>
+                      <div className="flex items-start gap-2">
+                        <span className={`px-1.5 py-0.5 rounded-[4px] text-[9px] uppercase tracking-wider font-bold shrink-0 mt-px
+                          ${entry.level === 'error' ? 'bg-red-500/15 text-red-400' 
+                          : entry.level === 'warning' ? 'bg-amber-500/15 text-amber-400'
+                          : entry.level === 'success' ? 'bg-cyan-500/15 text-cyan-400'
+                          : 'bg-zinc-800 text-zinc-300'}
+                        `}>{entry.stage}</span>
+                        <span className="text-zinc-300 tracking-tight">{entry.message}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {latestLogs.length === 0 && <span className="text-zinc-600 block px-2 italic">Listening for events...</span>}
+                </div>
+              </WorkspaceSection>
+            </WithHelp>
+          </div>
+
+          {/* Right Sidebar */}
+          <div className="space-y-6 lg:col-span-1 xl:col-span-1">
+            <WithHelp id="identity-posture" text="Cryptographic primitives assigned to the operator and agent, ensuring trustless execution.">
+              <WorkspaceSection eyebrow="Trust Configuration" title="Security Posture">
+                <div className="bg-zinc-900/80 rounded-3xl border border-zinc-800/80 p-5 space-y-5 shadow-lg">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Fingerprint className="w-4 h-4 text-emerald-400" />
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">ERC-8004 Identity</p>
+                    </div>
+                    <p className="text-xs font-mono text-zinc-300 bg-black/40 px-3 py-2 rounded-lg border border-zinc-800 truncate">{mission.identity.erc8004Identity}</p>
+                  </div>
+                  
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Lock className="w-4 h-4 text-cyan-400" />
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Registry Tx</p>
+                    </div>
+                    <Link href="#" className="block text-xs font-mono text-cyan-400 hover:text-cyan-300 bg-cyan-950/20 px-3 py-2 rounded-lg border border-cyan-500/20 hover:border-cyan-500/40 transition-colors truncate">
+                      {mission.identity.registrationTxHash}
+                    </Link>
+                  </div>
+                  
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Wallet className="w-4 h-4 text-purple-400" />
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Runtime Wallet</p>
+                    </div>
+                    <p className="text-xs font-mono text-purple-200 bg-purple-950/20 px-3 py-2 rounded-lg border border-purple-500/20 truncate">{state.session.operatorWallet}</p>
                   </div>
                 </div>
-              ) : null}
-            </div>
-          </WorkspaceSection>
-        </section>
+              </WorkspaceSection>
+            </WithHelp>
 
-        <WorkspaceSection
-          eyebrow="Agent Control Plane"
-          title="Production posture for autonomous clients"
-          description="This workspace is being hardened for real operators and agent clients, not just a hackathon demo. Machine access, paid actions, and trust proofs stay scoped to the same mission model."
-        >
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="workspace-subpanel rounded-3xl p-5">
-              <div className="flex items-center gap-3">
-                <Bot className="h-5 w-5 text-emerald-400" />
-                <p className="font-semibold text-white">Agent Runtime</p>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-zinc-400">
-                OpenClaw-style agents can be bound to the same operator session and pay for premium actions on the control plane.
-              </p>
-            </div>
-            <div className="workspace-subpanel rounded-3xl p-5">
-              <div className="flex items-center gap-3">
-                <Wallet className="h-5 w-5 text-cyan-400" />
-                <p className="font-semibold text-white">Paid Services</p>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-zinc-400">
-                x402 remains the default commercial path so paid resources can be invoked without breaking the mission narrative.
-              </p>
-            </div>
-            <div className="workspace-subpanel rounded-3xl p-5">
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="h-5 w-5 text-emerald-400" />
-                <p className="font-semibold text-white">Proof Surfaces</p>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-zinc-400">
-                ERC-8004, receipts, and evidence artifacts are kept operator-facing first and sponsor-facing second.
-              </p>
-            </div>
+            <WithHelp id="system-readiness" text="Overall assessment of protocol layers. Shows whether the infrastructure is bound, funded, and verifiable.">
+              <WorkspaceSection eyebrow="Network Checks" title="Subsystem Status">
+                <div className="bg-black/40 rounded-3xl border border-zinc-800/80 p-5 space-y-4 shadow-lg">
+                  <div className="flex justify-between items-center group">
+                    <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors flex items-center gap-2.5"><Activity className="w-4 h-4 text-zinc-500"/> Machine Comm</span>
+                    <StatusPill label={readiness.corePathReady ? "Bound" : "Offline"} tone={readiness.corePathReady ? "ready" : "blocked"} />
+                  </div>
+                  <div className="w-full h-px bg-zinc-800/50" />
+                  <div className="flex justify-between items-center group">
+                    <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors flex items-center gap-2.5"><Layers className="w-4 h-4 text-zinc-500"/> x402 Settled</span>
+                    <StatusPill label={readiness.x402Ready ? "Ready" : "Degraded"} tone={readiness.x402Ready ? "ready" : "warning"} />
+                  </div>
+                  <div className="w-full h-px bg-zinc-800/50" />
+                  <div className="flex justify-between items-center group">
+                    <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors flex items-center gap-2.5"><ShieldCheck className="w-4 h-4 text-zinc-500"/> ERC Trust</span>
+                    <StatusPill label={readiness.erc8004Ready ? "Verified" : "Pending"} tone={readiness.erc8004Ready ? "ready" : "neutral"} />
+                  </div>
+                  <div className="w-full h-px bg-zinc-800/50" />
+                  <div className="flex justify-between items-center group">
+                    <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors flex items-center gap-2.5"><FileCheck2 className="w-4 h-4 text-zinc-500"/> Data Rails</span>
+                    <StatusPill label={readiness.secondaryRailsReady ? "Active" : "Idle"} tone={readiness.secondaryRailsReady ? "waiting" : "neutral"} />
+                  </div>
+                </div>
+              </WorkspaceSection>
+            </WithHelp>
           </div>
-        </WorkspaceSection>
+        </div>
       </div>
     </FrontierShell>
   );

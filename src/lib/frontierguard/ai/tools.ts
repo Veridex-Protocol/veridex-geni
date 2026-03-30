@@ -4,6 +4,7 @@ import { encryptConfidentialPolicy, evaluateConfidentialPolicy } from "../integr
 import { scheduleFlowMission } from "../integrations/flow";
 import { createPrivateIntent, revealPrivateIntent } from "../integrations/starknet";
 import { uploadJsonToStoracha } from "../integrations/storacha";
+import { runPremiumYieldResearch } from "./research";
 
 export const executeFlowSchedule = tool(
   async ({ missionId, title, objective, cadence, retryPolicy, operatorWallet }) => {
@@ -136,14 +137,9 @@ export const storeSharedMemory = tool(
 );
 
 export const searchPremiumYields = tool(
-  async () => {
-    return JSON.stringify({
-      results: [
-        { protocol: "Aave V3", network: "Base", apy: "4.5%", risk: "low" },
-        { protocol: "Morpho", network: "Ethereum", apy: "5.2%", risk: "medium" },
-        { protocol: "Aerodrome", network: "Base", apy: "12.1%", risk: "high" },
-      ]
-    });
+  async ({ query }) => {
+    const result = await runPremiumYieldResearch({ query });
+    return JSON.stringify(result);
   },
   {
     name: "search_premium_yields",

@@ -1,195 +1,168 @@
-import React from "react";
+"use client";
+
 import Link from "next/link";
+import { CheckCircle2, Fingerprint, TimerOff, Terminal, Code2 } from "lucide-react";
+import { FrontierShell } from "@/components/frontierguard/frontier-shell";
+import { StatusPill, WorkspaceSection } from "@/components/frontierguard/workspace-primitives";
+import { WithHelp } from "@/components/frontierguard/help-sys";
 
 export default function PasskeyAuthStatesPage() {
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-[#101722] overflow-x-hidden font-display text-slate-900 dark:text-slate-100 antialiased">
-      <div className="layout-container flex h-full grow flex-col">
-        <header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-6 lg:px-40 py-4 sticky top-0 bg-[#f5f7f8]/80 dark:bg-[#101722]/80 backdrop-blur-md z-50">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="size-8 bg-blue-500 rounded-lg flex items-center justify-center text-white">
-              <span className="material-symbols-outlined text-xl">rocket_launch</span>
-            </Link>
-            <h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">Mission Launch</h2>
-          </div>
-          <div className="flex gap-3">
-            <button className="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
-              <span className="material-symbols-outlined text-slate-700 dark:text-slate-300">security</span>
-            </button>
-            <button className="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors">
-              <span className="material-symbols-outlined text-slate-700 dark:text-slate-300">close</span>
-            </button>
-          </div>
-        </header>
-
-        <main className="px-6 lg:px-40 py-10 flex flex-1 justify-center">
-          <div className="layout-content-container flex flex-col max-w-5xl w-full gap-12">
-            <section className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 text-blue-500 font-semibold text-sm uppercase tracking-widest">
-                <span className="material-symbols-outlined text-sm">verified_user</span>
-                <span>Secure Protocol</span>
+    <FrontierShell
+      eyebrow="Secure Protocol"
+      title="Passkey Authorization"
+      description="Securely signing delegation fragments for mission deployment. Ensure your hardware key or biometric device is ready."
+      actions={
+        <Link href="/mission/launch" className="workspace-button-secondary rounded-xl px-4 py-2 text-sm font-semibold hover:-translate-y-0.5 transition-transform">
+          Back to Launch
+        </Link>
+      }
+    >
+      <div className="space-y-6 max-w-[1400px] mx-auto animate-in fade-in zoom-in-95 duration-500">
+        <section className="grid gap-6 lg:grid-cols-3">
+          <WithHelp id="pk-state-1" text="Pending hardware or biometric signature from the user.">
+            <div className="flex flex-col gap-4 group">
+              <div className="flex items-center justify-between px-2">
+                <span className="text-[10px] font-bold text-cyan-500 uppercase tracking-widest">State 01</span>
+                <span className="text-[10px] text-zinc-500 font-mono">ID: AUTH_REQ_01</span>
               </div>
-              <h1 className="text-slate-900 dark:text-white text-4xl font-extrabold tracking-tight">Passkey Authorization</h1>
-              <p className="text-slate-500 dark:text-slate-400 text-lg max-w-2xl">
-                Securely signing delegation fragments for mission deployment. Ensure your hardware key or biometric device is ready.
-              </p>
-            </section>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between px-2">
-                  <span className="text-xs font-bold text-blue-500 uppercase">State 01</span>
-                  <span className="text-[10px] text-slate-500 font-mono">ID: AUTH_REQ_01</span>
+              <WorkspaceSection title="Requesting Signature" className="h-[380px] flex flex-col justify-between border-cyan-500/20 group-hover:border-cyan-500/40">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="size-2 rounded-full bg-cyan-500 animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]"></div>
+                  <span className="text-sm font-medium text-cyan-400">Awaiting Signature...</span>
                 </div>
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xl flex flex-col">
-                  <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="size-2 rounded-full bg-blue-500 animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite]"></div>
-                      <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Awaiting Signature...</span>
-                    </div>
-                    <h3 className="text-xl font-bold dark:text-white mb-2">Requesting Signature</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Confirm the request on your trusted device.</p>
+                <div className="flex-1 flex flex-col items-center justify-center gap-6 relative">
+                  <div className="absolute inset-0 bg-cyan-500/5 blur-2xl rounded-full"></div>
+                  <div className="relative size-20 rounded-full border-2 border-cyan-500/50 flex items-center justify-center bg-cyan-500/10">
+                    <Fingerprint className="text-cyan-400 w-8 h-8" />
                   </div>
-                  <div className="p-6 flex flex-col items-center justify-center gap-6 min-h-[240px]">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full"></div>
-                      <div className="relative size-20 rounded-full border-2 border-blue-500 flex items-center justify-center">
-                        <span className="material-symbols-outlined text-4xl text-blue-500">fingerprint</span>
-                      </div>
-                    </div>
-                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1 overflow-hidden">
-                      <div className="bg-blue-500 h-full w-1/3 rounded-full"></div>
-                    </div>
-                    <p className="text-xs font-mono text-slate-400 text-center">LISTEN_EVENT: WEB_AUTHN_PROMPT</p>
+                  <div className="w-full bg-zinc-900 rounded-full h-1 overflow-hidden relative">
+                    <div className="absolute inset-y-0 left-0 bg-cyan-500 h-full w-1/3 rounded-full animate-[pulse_2s_linear_infinite]"></div>
                   </div>
-                  <div className="p-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-800">
-                    <p className="text-[10px] leading-relaxed text-slate-400 italic">
-                      Dev Note: Trigger browser native navigator.credentials.get()
-                    </p>
+                  <p className="text-[10px] font-mono text-zinc-500 text-center tracking-widest mt-2 uppercase">LISTEN_EVENT: WEB_AUTHN_PROMPT</p>
+                </div>
+              </WorkspaceSection>
+            </div>
+          </WithHelp>
+
+          <WithHelp id="pk-state-2" text="Successful delegation fragment cryptographic signature.">
+            <div className="flex flex-col gap-4 group">
+              <div className="flex items-center justify-between px-2">
+                <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">State 02</span>
+                <span className="text-[10px] text-zinc-500 font-mono">ID: AUTH_SUCCESS_02</span>
+              </div>
+              <WorkspaceSection title="Mission Authorized" className="h-[380px] flex flex-col justify-between border-emerald-500/20 group-hover:border-emerald-500/40">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="size-2 rounded-full bg-emerald-500"></div>
+                  <span className="text-sm font-medium text-emerald-400">Verification Complete</span>
+                </div>
+                <div className="flex-1 flex flex-col items-center justify-center gap-6 relative">
+                  <div className="absolute inset-0 bg-emerald-500/5 blur-2xl rounded-full"></div>
+                  <div className="relative size-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 ring-1 ring-emerald-500/30">
+                    <CheckCircle2 className="w-8 h-8" />
                   </div>
+                  <div className="bg-zinc-950/80 p-4 rounded-xl border border-zinc-800 font-mono text-xs w-full">
+                    <div className="grid grid-cols-[100px_1fr] gap-2 mb-1">
+                      <span className="text-zinc-500 uppercase">signature:</span>
+                      <span className="text-emerald-400 truncate">0x7f3ab2e948c2...</span>
+                    </div>
+                    <div className="grid grid-cols-[100px_1fr] gap-2 mb-1">
+                      <span className="text-zinc-500 uppercase">fragment:</span>
+                      <span className="text-emerald-400">DLG_8821_X</span>
+                    </div>
+                    <div className="grid grid-cols-[100px_1fr] gap-2">
+                      <span className="text-zinc-500 uppercase">status:</span>
+                      <span className="text-emerald-400">COMMITTED</span>
+                    </div>
+                  </div>
+                  <button className="workspace-button-primary w-full py-3 rounded-xl text-sm font-semibold hover:scale-[1.02] transition-transform">
+                    Deploy Mission
+                  </button>
+                </div>
+              </WorkspaceSection>
+            </div>
+          </WithHelp>
+
+          <WithHelp id="pk-state-3" text="Failure or timeout state for hardware signing event.">
+            <div className="flex flex-col gap-4 group">
+              <div className="flex items-center justify-between px-2">
+                <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">State 03</span>
+                <span className="text-[10px] text-zinc-500 font-mono">ID: AUTH_ERR_03</span>
+              </div>
+              <WorkspaceSection title="Timeout Occurred" className="h-[380px] flex flex-col justify-between border-red-500/20 group-hover:border-red-500/40">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="size-2 rounded-full bg-red-500"></div>
+                  <span className="text-sm font-medium text-red-400">Request Failed</span>
+                </div>
+                <div className="flex-1 flex flex-col items-center justify-center gap-6 relative">
+                  <div className="absolute inset-0 bg-red-500/5 blur-2xl rounded-full"></div>
+                  <div className="relative size-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 ring-1 ring-red-500/30">
+                    <TimerOff className="w-8 h-8" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-mono text-xs text-red-400 mb-2 bg-red-500/10 inline-block px-2 py-1 rounded">ERR_TIMEOUT_0x04</p>
+                    <p className="text-xs text-zinc-400 px-4 leading-relaxed">The device did not respond within the 60-second window.</p>
+                  </div>
+                  <div className="flex gap-3 w-full mt-2">
+                    <button className="workspace-button-secondary flex-1 py-3 rounded-xl text-sm font-semibold hover:bg-zinc-800 transition-colors">Abort</button>
+                    <button className="workspace-button-primary flex-1 py-3 rounded-xl text-sm font-semibold hover:scale-[1.02] transition-transform bg-gradient-to-r from-red-600 to-red-500">Retry</button>
+                  </div>
+                </div>
+              </WorkspaceSection>
+            </div>
+          </WithHelp>
+        </section>
+
+        <WorkspaceSection
+          eyebrow="Integration Guide"
+          title="Developer Transition Logic"
+          description="Guidelines for engineering teams implementing these authenticators."
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 pl-2">
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="bg-cyan-500/10 p-2.5 rounded-xl border border-cyan-500/20 shrink-0">
+                  <Terminal className="h-4 w-4 text-cyan-400" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-white mb-2">1 → 2: Success Transition</h4>
+                  <p className="text-xs text-zinc-400 leading-relaxed">
+                    Trigger on <code className="bg-cyan-500/10 text-cyan-300 px-1.5 py-0.5 rounded text-[10px] font-mono border border-cyan-500/20">onSuccess()</code> callback from WebAuthn API. Ensure state transition is immediate to prevent user confusion.
+                  </p>
                 </div>
               </div>
-
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between px-2">
-                  <span className="text-xs font-bold text-emerald-500 uppercase">State 02</span>
-                  <span className="text-[10px] text-slate-500 font-mono">ID: AUTH_SUCCESS_02</span>
+              <div className="flex items-start gap-4">
+                <div className="bg-red-500/10 p-2.5 rounded-xl border border-red-500/20 shrink-0">
+                  <Terminal className="h-4 w-4 text-red-400" />
                 </div>
-                <div className="bg-white dark:bg-slate-900 border border-emerald-500/30 dark:border-emerald-500/20 rounded-xl overflow-hidden shadow-xl flex flex-col">
-                  <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-emerald-50/50 dark:bg-emerald-500/5">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="size-2 rounded-full bg-emerald-500"></div>
-                      <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Verification Complete</span>
-                    </div>
-                    <h3 className="text-xl font-bold dark:text-white mb-2">Mission Authorized</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Signed delegation fragment received.</p>
-                  </div>
-                  <div className="p-6 flex flex-col gap-4 min-h-[240px] overflow-hidden">
-                    <div className="flex items-center justify-center py-4">
-                      <div className="size-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                        <span className="material-symbols-outlined text-4xl">check_circle</span>
-                      </div>
-                    </div>
-                    <div className="bg-slate-100 dark:bg-slate-950 p-3 rounded border border-slate-200 dark:border-slate-800 font-mono text-[10px] text-slate-600 dark:text-slate-400 break-all leading-tight">
-                      <span className="text-emerald-500">"signature":</span> "0x7f3a...b2e9",<br/>
-                      <span className="text-emerald-500">"fragment_id":</span> "DLG_8821_X",<br/>
-                      <span className="text-emerald-500">"status":</span> "COMMITTED"
-                    </div>
-                    <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded transition-colors text-sm">
-                      Deploy Mission
-                    </button>
-                  </div>
-                  <div className="p-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-800">
-                    <p className="text-[10px] leading-relaxed text-slate-400 italic">
-                      Dev Note: On success, update UI to reflect "Signed" status and enable primary CTA.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between px-2">
-                  <span className="text-xs font-bold text-rose-500 uppercase">State 03</span>
-                  <span className="text-[10px] text-slate-500 font-mono">ID: AUTH_ERR_03</span>
-                </div>
-                <div className="bg-white dark:bg-slate-900 border border-rose-500/30 dark:border-rose-500/20 rounded-xl overflow-hidden shadow-xl flex flex-col">
-                  <div className="p-6 border-b border-slate-200 dark:border-slate-800 bg-rose-50/50 dark:bg-rose-500/5">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="size-2 rounded-full bg-rose-500"></div>
-                      <span className="text-sm font-medium text-rose-600 dark:text-rose-400">Request Failed</span>
-                    </div>
-                    <h3 className="text-xl font-bold dark:text-white mb-2">Timeout Occurred</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">The authorization request expired.</p>
-                  </div>
-                  <div className="p-6 flex flex-col items-center justify-center gap-6 min-h-[240px]">
-                    <div className="size-16 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500">
-                      <span className="material-symbols-outlined text-4xl">timer_off</span>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white mb-1">ERR_TIMEOUT_0x04</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 px-4">The device did not respond within the 60-second window.</p>
-                    </div>
-                    <div className="flex gap-2 w-full">
-                      <button className="flex-1 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold py-2 rounded text-sm">Cancel</button>
-                      <button className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded text-sm">Retry Request</button>
-                    </div>
-                  </div>
-                  <div className="p-4 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-800">
-                    <p className="text-[10px] leading-relaxed text-slate-400 italic">
-                      Dev Note: Implement exponential backoff for retry button logic.
-                    </p>
-                  </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-white mb-2">1 → 3: Failure Transition</h4>
+                  <p className="text-xs text-zinc-400 leading-relaxed">
+                    Trigger on <code className="bg-red-500/10 text-red-300 px-1.5 py-0.5 rounded text-[10px] font-mono border border-red-500/20">DOMException: TimeoutError</code> or manual cancellation. Ensure fallback UI provides retry path.
+                  </p>
                 </div>
               </div>
             </div>
-
-            <div className="mt-12 p-8 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/30">
-              <h4 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <span className="material-symbols-outlined text-blue-500">terminal</span>
-                Developer Transition Logic
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm text-slate-600 dark:text-slate-400">
-                <ul className="space-y-3 list-disc pl-5">
-                  <li>
-                    <strong className="text-slate-900 dark:text-slate-200">1 → 2:</strong> Trigger on{" "}
-                    <code className="bg-blue-500/10 text-blue-500 px-1 rounded">onSuccess()</code> callback from WebAuthn API. Ensure state transition is immediate to prevent user confusion.
-                  </li>
-                  <li>
-                    <strong className="text-slate-900 dark:text-slate-200">1 → 3:</strong> Trigger on{" "}
-                    <code className="bg-rose-500/10 text-rose-500 px-1 rounded">DOMException: TimeoutError</code> or manual cancellation.
-                  </li>
-                </ul>
-                <ul className="space-y-3 list-disc pl-5">
-                  <li>
-                    <strong className="text-slate-900 dark:text-slate-200">Biometric Focus:</strong> If no hardware key detected, fallback to platform authenticator (TouchID/FaceID) automatically.
-                  </li>
-                  <li>
-                    <strong className="text-slate-900 dark:text-slate-200">Density:</strong> Keep modal size compact (max-width: 440px) to mimic native OS authorization prompts.
-                  </li>
-                </ul>
+            
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="bg-zinc-800/50 p-2.5 rounded-xl border border-zinc-700/50 shrink-0">
+                  <Code2 className="h-4 w-4 text-zinc-300" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-white mb-2">Biometric Focus & Density</h4>
+                  <p className="text-xs text-zinc-400 leading-relaxed mb-4">
+                    If no hardware key is detected, fallback to the platform authenticator (TouchID/FaceID) automatically instead of failing.
+                  </p>
+                  <p className="text-xs text-zinc-400 leading-relaxed">
+                    Keep the modal size compact (max-width: 440px) across all viewports to mimic native OS authorization prompts to prevent phishing panic.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </main>
-
-        <footer className="px-6 lg:px-40 py-10 border-t border-slate-200 dark:border-slate-800">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-4">
-              <div className="size-6 bg-slate-200 dark:bg-slate-800 rounded flex items-center justify-center">
-                <span className="material-symbols-outlined text-sm">code</span>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-mono tracking-tighter">
-                v2.4.0-STABLE // MISSION_CONTROL_CORE
-              </p>
-            </div>
-            <div className="flex gap-6 text-xs font-bold uppercase tracking-widest text-slate-400">
-              <Link className="hover:text-blue-500 transition-colors" href="#">Documentation</Link>
-              <Link className="hover:text-blue-500 transition-colors" href="#">Security Audit</Link>
-              <Link className="hover:text-blue-500 transition-colors" href="#">System Status</Link>
-            </div>
-          </div>
-        </footer>
+        </WorkspaceSection>
       </div>
-    </div>
+    </FrontierShell>
   );
 }

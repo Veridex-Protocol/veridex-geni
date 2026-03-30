@@ -168,6 +168,17 @@ interface ServiceResponse {
   live?: boolean;
   proofLevel?: "verified_onchain" | "live_unverified" | "demo";
   proofSummary?: string;
+  model?: string;
+  modelVersion?: string;
+  grounded?: boolean;
+  generatedAt?: string;
+  researchQuery?: string;
+  researchSummary?: string;
+  searchQueries?: string[];
+  sources?: Array<{
+    title: string;
+    url: string;
+  }>;
   data: Array<{
     asset: string;
     protocol: string;
@@ -175,6 +186,8 @@ interface ServiceResponse {
     riskScore: number;
     liquidity: string;
     trustScore: number;
+    rationale?: string;
+    sourceUrls?: string[];
   }>;
 }
 
@@ -1077,7 +1090,16 @@ export function FrontierGuardProvider({ children }: { children: ReactNode }) {
           const memoryResult = await postJson<MemoryResponse>("/api/frontier/storacha/memory", {
             missionId: missionSnapshot.id,
             type: "research",
-            payload: settled.data,
+            payload: {
+              summary: settled.researchSummary,
+              query: settled.researchQuery,
+              generatedAt: settled.generatedAt,
+              model: settled.modelVersion ?? settled.model,
+              grounded: settled.grounded,
+              searchQueries: settled.searchQueries,
+              sources: settled.sources,
+              results: settled.data,
+            },
           });
 
           const payment: PaymentEvent = {
@@ -1161,11 +1183,22 @@ export function FrontierGuardProvider({ children }: { children: ReactNode }) {
               id: `MEM-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
               type: "research",
               title: "Premium market dataset",
-              summary: "x402-paid service returned trust-normalized yield and risk records.",
+              summary:
+                settled.researchSummary ??
+                "x402-paid service returned Gemini-grounded yield and risk research.",
               owner: "Frontier Research Specialist",
               createdAt: new Date().toISOString(),
               cid: memoryResult.cid,
-              content: settled.data,
+              content: {
+                summary: settled.researchSummary,
+                query: settled.researchQuery,
+                generatedAt: settled.generatedAt,
+                model: settled.modelVersion ?? settled.model,
+                grounded: settled.grounded,
+                searchQueries: settled.searchQueries,
+                sources: settled.sources,
+                results: settled.data,
+              },
             }),
             logs: appendLogs(missionSnapshot, [
               createLog(
@@ -1193,6 +1226,9 @@ export function FrontierGuardProvider({ children }: { children: ReactNode }) {
                   live: settled.live ?? true,
                   verified: settled.paymentVerified ?? false,
                   proofLevel: settled.proofLevel,
+                  grounded: settled.grounded ?? false,
+                  sourceCount: settled.sources?.length ?? 0,
+                  model: settled.modelVersion ?? settled.model,
                 },
                 ["x402", "settled", settled.proofLevel ?? "live"],
               ),

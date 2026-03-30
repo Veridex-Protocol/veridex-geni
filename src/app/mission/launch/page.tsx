@@ -25,6 +25,7 @@ import {
   WorkspaceSection,
 } from "@/components/frontierguard/workspace-primitives";
 import { useFrontierGuard } from "@/components/frontierguard/provider";
+import { WithHelp } from "@/components/frontierguard/help-sys";
 import type { MissionLaunchInput } from "@/lib/frontierguard/types";
 
 type LaunchFormState = {
@@ -267,24 +268,28 @@ export default function MissionLaunchPage() {
       title="Compose a bounded operator mission"
       description="Define the job, policy envelope, and execution path for the best-bet sponsor stack first. Secondary rails stay visible but gated until they are ready."
       actions={
-        <>
+        <div className="flex items-center gap-2">
           {!state.session.authenticated ? (
+            <WithHelp id="launch-auth" text="A hardware-bound passkey session is required to authorize the launch of a new mission.">
+              <button
+                type="button"
+                onClick={() => void authenticatePasskey()}
+                className="workspace-button-primary rounded-xl px-4 py-2 text-sm font-semibold hover:-translate-y-0.5 transition-transform"
+              >
+                Re-authenticate
+              </button>
+            </WithHelp>
+          ) : null}
+          <WithHelp id="launch-reset" text="Reset the mission manifest to its default template configuration.">
             <button
               type="button"
-              onClick={() => void authenticatePasskey()}
-              className="workspace-button-primary rounded-xl px-4 py-2 text-sm font-semibold"
+              onClick={resetDemo}
+              className="workspace-button-secondary rounded-xl px-4 py-2 text-sm font-semibold hover:-translate-y-0.5 transition-transform"
             >
-              Re-authenticate
+              Reset Defaults
             </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={resetDemo}
-            className="workspace-button-secondary rounded-xl px-4 py-2 text-sm font-semibold"
-          >
-            Reset Defaults
-          </button>
-        </>
+          </WithHelp>
+        </div>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -552,29 +557,33 @@ export default function MissionLaunchPage() {
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={!canLaunch}
-                  className="workspace-button-primary inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  {isPending ? "Launching mission..." : "Launch into execution"}
-                </button>
+                <WithHelp id="launch-submit" text="Sign the deterministic execution manifest and dispatch it to the runtime layer.">
+                  <button
+                    type="submit"
+                    disabled={!canLaunch}
+                    className="workspace-button-primary inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 hover:scale-[1.01] transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    {isPending ? "Configuring systems..." : "Initialize Runtime Context"}
+                  </button>
+                </WithHelp>
 
                 {!state.session.authenticated ? (
-                  <EmptyState
-                    title="Passkey re-authentication required"
-                    description="Authenticate the operator before launch so the mission can bind to a live runtime wallet."
-                    action={
-                      <button
-                        type="button"
-                        onClick={() => void authenticatePasskey()}
-                        className="workspace-button-primary rounded-xl px-4 py-2 text-sm font-semibold"
-                      >
-                        Sign in with passkey
-                      </button>
-                    }
-                  />
+                  <WithHelp id="launch-auth-empty" text="Before launching, you must authenticate as a trusted operator bound by hardware cryptography.">
+                    <EmptyState
+                      title="Passkey session requirement"
+                      description="Connect your operator credentials to unlock enterprise deployment boundaries."
+                      action={
+                        <button
+                          type="button"
+                          onClick={() => void authenticatePasskey()}
+                          className="workspace-button-primary rounded-xl px-4 py-2 text-sm font-semibold hover:-translate-y-0.5 transition-transform"
+                        >
+                          Sign in with passkey
+                        </button>
+                      }
+                    />
+                  </WithHelp>
                 ) : null}
               </div>
             </WorkspaceSection>
