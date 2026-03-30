@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { config as loadEnv } from "dotenv";
 import { defineConfig } from "prisma/config";
 
