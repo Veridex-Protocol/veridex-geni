@@ -35,15 +35,6 @@ FrontierGuard standardizes agent execution by strictly defining boundaries befor
 
 ---
 
-## Why this is a Top "Fresh Code" Contender
-Built entirely from scratch for the PL_Genesis Hackathon, Veridex FrontierGuard represents a massive technical and UX undertaking:
-- **Complex Agent State Machine:** We didn't just build a smart contract—we built a full React Context-driven state machine (`FrontierGuardProvider`) that autonomously transitions agents through exact lifecycle stages: `authorize -> register -> discover -> plan -> execute -> verify -> finalize`. 
-- **Production-Ready Enterprise UX:** We avoided the "clunky dev tool" aesthetic by implementing a bespoke, highly responsive dark-glass UI using customized Tailwind CSS primitives, interactive tooltips (`WithHelp` context system), and dynamic mission layout grids.
-- **Deep Protocol Modeling:** The application correctly models the intricate differences between Starknet private intents, Zama confidential FHE thresholds, and Flow scheduled transactions, formatting the data perfectly into the required DevSpot `agent.json` payloads without breaking the unified UI.
-- **Strictly Typed Architecture:** The entire repository is built on Next.js 14 App Router with flawless TypeScript models for the autonomous mission logs, execution boundaries, and agentic receipts (`src/lib/frontierguard/*`).
-
----
-
 ## Overview
 
 Autonomous systems are getting better at planning and acting, but most production environments still lack four things:
