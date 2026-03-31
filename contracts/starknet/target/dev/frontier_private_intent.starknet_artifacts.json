@@ -1,0 +1,1 @@
+{"version":1,"contracts":[{"id":"920fp46jddu88","package_name":"frontier_private_intent","contract_name":"FrontierPrivateIntent","module_path":"frontier_private_intent::frontier_private_intent::FrontierPrivateIntent","artifacts":{"sierra":"frontier_private_intent_FrontierPrivateIntent.contract_class.json","casm":null}}]}

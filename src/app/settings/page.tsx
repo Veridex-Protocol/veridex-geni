@@ -31,6 +31,19 @@ function truncate(value: string, start = 10, end = 8): string {
   return `${value.slice(0, start)}...${value.slice(-end)}`;
 }
 
+function formatSignerSource(
+  value: "session_wallet" | "erc8004_private_key" | "unavailable" | undefined,
+): string {
+  switch (value) {
+    case "session_wallet":
+      return "Enterprise session signer";
+    case "erc8004_private_key":
+      return "Dedicated ERC-8004 signer";
+    default:
+      return "Unavailable";
+  }
+}
+
 export default function SettingsPage() {
   const auth = useFrontierAuth();
   const { mission, authenticatePasskey, state } = useFrontierGuard();
@@ -193,6 +206,57 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
+              {status?.runtimeHealth ? (
+                <div className="mt-4 rounded-3xl border border-white/8 bg-black/10 p-5">
+                  <dl>
+                    <FieldRow
+                      label="Live signer source"
+                      value={formatSignerSource(status.runtimeHealth.signerSource)}
+                      tone={status.runtimeHealth.available ? "success" : "warning"}
+                    />
+                    <FieldRow
+                      label="Signer address"
+                      value={truncate(status.runtimeHealth.walletAddress ?? "unresolved")}
+                      tone={status.runtimeHealth.walletAddress ? "success" : "warning"}
+                    />
+                    <FieldRow
+                      label="Native gas balance"
+                      value={
+                        status.runtimeHealth.nativeBalanceFormatted
+                          ? `${status.runtimeHealth.nativeBalanceFormatted} ETH`
+                          : "Unavailable"
+                      }
+                      tone={status.runtimeHealth.liveWriteReady ? "success" : "warning"}
+                    />
+                    <FieldRow
+                      label="Payment balance"
+                      value={
+                        status.runtimeHealth.assetBalanceFormatted
+                          ? `${status.runtimeHealth.assetBalanceFormatted} ${status.runtimeHealth.assetSymbol ?? "USDC"}`
+                          : "Unavailable"
+                      }
+                      tone={status.runtimeHealth.livePaymentReady ? "success" : "warning"}
+                    />
+                    <FieldRow
+                      label="Live write capability"
+                      value={status.runtimeHealth.liveWriteReady ? "Ready" : "Top up gas"}
+                      tone={status.runtimeHealth.liveWriteReady ? "success" : "warning"}
+                    />
+                    <FieldRow
+                      label="Live payment capability"
+                      value={status.runtimeHealth.livePaymentReady ? "Ready" : "Top up paywall asset"}
+                      tone={status.runtimeHealth.livePaymentReady ? "success" : "warning"}
+                    />
+                  </dl>
+                  {status.runtimeHealth.warnings.length ? (
+                    <div className="mt-4 space-y-2 text-sm leading-6 text-amber-200/85">
+                      {status.runtimeHealth.warnings.map((warning) => (
+                        <p key={warning}>{warning}</p>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
               {status?.sponsorPath.missing?.length ? (
                 <p className="mt-4 text-sm leading-6 text-zinc-500">
                   Missing env or infra: {status.sponsorPath.missing.join(", ")}

@@ -2,40 +2,93 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, Fingerprint, Loader2, ShieldCheck } from "lucide-react";
 import { useFrontierAuth } from "@/components/frontierguard/auth-provider";
+import { useFrontierStatus } from "@/components/frontierguard/use-frontier-status";
 import { StatusPill } from "@/components/frontierguard/workspace-primitives";
+
+function wait(durationMs: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, durationMs);
+  });
+}
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+): Promise<{ timedOut: false; value: T } | { timedOut: true }> {
+  return Promise.race([
+    promise.then((value) => ({ timedOut: false as const, value })),
+    wait(timeoutMs).then(() => ({ timedOut: true as const })),
+  ]);
+}
 
 function AwaitingSignatureScreen() {
   const auth = useFrontierAuth();
+  const { refresh: refreshStatus } = useFrontierStatus({ auto: false });
   const router = useRouter();
   const searchParams = useSearchParams();
   const action = searchParams.get("action") === "register" ? "register" : "login";
   const username = searchParams.get("username")?.trim() ?? "";
   const displayName = searchParams.get("displayName")?.trim() ?? "";
   const missingRegistrationFields = action === "register" && (!username || !displayName);
-  const [phase, setPhase] = useState<"arming" | "waiting" | "success" | "error">("arming");
+  const [phase, setPhase] = useState<
+    "arming" | "waiting" | "verifying" | "success" | "error"
+  >("arming");
   const [localError, setLocalError] = useState<string>();
+  const [verificationDetail, setVerificationDetail] = useState<string>();
   const hasStartedRef = useRef(false);
   const hasRedirectedRef = useRef(false);
 
+  const verifyOperationalSession = useCallback(async () => {
+    let lastWarning =
+      "Passkey authenticated, but runtime verification did not complete yet.";
+
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const session = await auth.refreshSession({ silent: true }).catch(() => null);
+      const status = await refreshStatus({ silent: true }).catch(() => null);
+      const runtimeBound = Boolean(status?.runtime.available);
+      const sessionSignerBound = status?.runtimeHealth.signerSource === "session_wallet";
+
+      if (session?.authenticated && (runtimeBound || sessionSignerBound)) {
+        return {
+          ok: true as const,
+          detail: sessionSignerBound
+            ? "Cookie-backed operator session is bound to a live runtime signer."
+            : "Cookie-backed operator session is verified and the runtime wallet is bound.",
+        };
+      }
+
+      lastWarning =
+        status?.runtimeHealth.warnings[0] ??
+        (session?.authenticated
+          ? "Operator session is live, but the runtime wallet has not finished binding."
+          : lastWarning);
+
+      await wait(700);
+    }
+
+    return {
+      ok: false as const,
+      error: lastWarning,
+    };
+  }, [auth.refreshSession, refreshStatus]);
+
   useEffect(() => {
-    if (!auth.ready || !auth.session?.authenticated || hasRedirectedRef.current) {
+    if (phase !== "success" || hasRedirectedRef.current) {
       return;
     }
 
     hasRedirectedRef.current = true;
-    setPhase("success");
-
     const redirectTimer = window.setTimeout(() => {
       router.replace("/login/session-initialized");
-    }, 250);
+    }, 350);
 
     return () => {
       window.clearTimeout(redirectTimer);
     };
-  }, [auth.ready, auth.session, router]);
+  }, [phase, router]);
 
   useEffect(() => {
     if (!auth.ready || hasStartedRef.current || missingRegistrationFields) {
@@ -47,22 +100,58 @@ function AwaitingSignatureScreen() {
 
     const run = async () => {
       setPhase("waiting");
+      setVerificationDetail(undefined);
 
       try {
-        if (action === "register") {
-          await auth.registerPasskey({
-            username,
-            displayName,
-            passkeyLabel: "",
-          });
-        } else {
-          await auth.signInWithPasskey();
-        }
+        const nextSession =
+          action === "register"
+            ? await auth.registerPasskey({
+                username,
+                displayName,
+                passkeyLabel: "",
+              })
+            : await auth.signInWithPasskey();
 
         if (!active) {
           return;
         }
 
+        setPhase("verifying");
+        setVerificationDetail(
+          "Verifying server session, runtime wallet binding, and signer path.",
+        );
+
+        const verification = await withTimeout(verifyOperationalSession(), 3500);
+        if (!active) {
+          return;
+        }
+
+        if (verification.timedOut) {
+          setVerificationDetail(
+            "Passkey session established. Runtime verification is continuing in the background.",
+          );
+          setPhase("success");
+          return;
+        }
+
+        const result = verification.value;
+
+        if (!result.ok && nextSession?.authenticated) {
+          setVerificationDetail(
+            "Passkey session established. Runtime verification is still warming up and can continue from the command center.",
+          );
+          setPhase("success");
+          return;
+        }
+
+        if (!result.ok) {
+          setPhase("error");
+          setLocalError(result.error);
+          hasStartedRef.current = false;
+          return;
+        }
+
+        setVerificationDetail(result.detail);
         setPhase("success");
       } catch (error) {
         if (!active) {
@@ -83,11 +172,13 @@ function AwaitingSignatureScreen() {
   }, [
     action,
     auth.ready,
+    auth.refreshSession,
     auth.registerPasskey,
     auth.signInWithPasskey,
     displayName,
     missingRegistrationFields,
     username,
+    verifyOperationalSession,
   ]);
 
   const effectivePhase = missingRegistrationFields ? "error" : phase;
@@ -96,7 +187,13 @@ function AwaitingSignatureScreen() {
       ? "Enter both username and display name before creating a new passkey."
       : localError ?? auth.error;
   const progress =
-    effectivePhase === "arming" ? 20 : effectivePhase === "waiting" ? 68 : 100;
+    effectivePhase === "arming"
+      ? 20
+      : effectivePhase === "waiting"
+        ? 62
+        : effectivePhase === "verifying"
+          ? 88
+          : 100;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -112,9 +209,13 @@ function AwaitingSignatureScreen() {
             </h1>
             <p className="mt-4 text-sm leading-7 text-zinc-400">
               {effectivePhase === "success"
-                ? "The passkey ceremony completed successfully. Your operator session is being initialized."
+                ? verificationDetail ??
+                  "The passkey ceremony completed successfully and the operator session is fully verified."
                 : effectivePhase === "error"
                   ? effectiveError ?? "The secure handshake did not complete."
+                  : effectivePhase === "verifying"
+                    ? verificationDetail ??
+                      "Passkey accepted. Verifying the cookie-backed operator session and runtime signer."
                   : action === "register"
                     ? "Approve the biometric or PIN prompt to create a new operator credential on this device."
                     : "Approve the passkey prompt to refresh this operator session before mission launch or execution."}
@@ -132,6 +233,8 @@ function AwaitingSignatureScreen() {
                         ? "Verification complete"
                         : effectivePhase === "error"
                           ? "Action required"
+                          : effectivePhase === "verifying"
+                            ? "Binding runtime session"
                           : "Waiting on secure prompt"}
                     </p>
                   </div>
@@ -141,6 +244,8 @@ function AwaitingSignatureScreen() {
                         ? "Ready"
                         : effectivePhase === "error"
                           ? "Error"
+                          : effectivePhase === "verifying"
+                            ? "Verifying"
                           : "In progress"
                     }
                     tone={
@@ -179,10 +284,14 @@ function AwaitingSignatureScreen() {
                         ? "Secure link established"
                         : effectivePhase === "error"
                           ? "Prompt needs attention"
+                          : effectivePhase === "verifying"
+                            ? "Runtime verification in progress"
                           : "Secure prompt in progress"}
                     </p>
                     <p className="mt-2 text-sm leading-6 text-zinc-400">
-                      Your private credential stays on-device. Only the public credential metadata is bound to the operator session.
+                      {effectivePhase === "verifying"
+                        ? "We are confirming that the server cookie, runtime wallet, and session signer all resolve from this passkey ceremony."
+                        : "Your private credential stays on-device. Only the public credential metadata is bound to the operator session."}
                     </p>
                   </div>
                 </div>
@@ -196,6 +305,14 @@ function AwaitingSignatureScreen() {
               >
                 Cancel Request
               </Link>
+              {effectivePhase === "error" && auth.session?.authenticated ? (
+                <Link
+                  href="/settings"
+                  className="workspace-button-secondary inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold"
+                >
+                  Inspect Live Status
+                </Link>
+              ) : null}
             </div>
           </section>
 
@@ -224,6 +341,8 @@ function AwaitingSignatureScreen() {
                   className={`h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-500 ${
                     effectivePhase === "success"
                       ? "w-full"
+                      : effectivePhase === "verifying"
+                        ? "w-5/6"
                       : effectivePhase === "waiting"
                         ? "w-2/3"
                         : "w-1/4"
@@ -235,11 +354,15 @@ function AwaitingSignatureScreen() {
                   className={`flex h-20 w-20 items-center justify-center rounded-full border ${
                     effectivePhase === "success"
                       ? "border-emerald-500/25 bg-emerald-500/10"
+                      : effectivePhase === "verifying"
+                        ? "border-cyan-500/25 bg-cyan-500/10"
                       : "border-white/8 bg-black/15"
                   }`}
                 >
                   {effectivePhase === "success" ? (
                     <CheckCircle2 className="h-9 w-9 text-emerald-300" />
+                  ) : effectivePhase === "verifying" ? (
+                    <Loader2 className="h-9 w-9 animate-spin text-cyan-300" />
                   ) : (
                     <ShieldCheck className="h-9 w-9 text-zinc-500" />
                   )}
@@ -254,7 +377,7 @@ function AwaitingSignatureScreen() {
                   Session promise
                 </p>
                 <p className="mt-3 text-sm leading-6 text-zinc-400">
-                  After a successful signature, the app should move to the session-initialized screen and then into the command center. There should be no dead-end state here.
+                  After a successful signature, the app now verifies that the cookie-backed session can actually bind to the runtime before continuing. There should be no green UI with a dead runtime underneath it.
                 </p>
               </div>
               {effectiveError ? (

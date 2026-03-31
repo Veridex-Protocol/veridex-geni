@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export interface FrontierStatusSnapshot {
   mode: string;
@@ -45,51 +45,79 @@ export interface FrontierStatusSnapshot {
       erc8004Identity?: string | null;
     } | null;
   };
+  runtimeHealth: {
+    available: boolean;
+    signerSource: "session_wallet" | "erc8004_private_key" | "unavailable";
+    walletAddress?: string | null;
+    paywallNetwork: string;
+    paywallAsset: string;
+    paywallAmountUsd: number;
+    nativeBalanceWei?: string;
+    nativeBalanceFormatted?: string;
+    assetBalanceRaw?: string;
+    assetBalanceFormatted?: string;
+    assetSymbol?: string;
+    x402Ready: boolean;
+    erc8004Ready: boolean;
+    livePaymentReady: boolean;
+    liveWriteReady: boolean;
+    warnings: string[];
+  };
 }
 
-export function useFrontierStatus() {
+export function useFrontierStatus(options?: { auto?: boolean }) {
   const [status, setStatus] = useState<FrontierStatusSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("/api/frontier/status", { cache: "no-store" });
-        if (!response.ok) {
-          throw new Error("Unable to load control-plane status.");
-        }
-
-        const json = (await response.json()) as FrontierStatusSnapshot;
-        if (!cancelled) {
-          setStatus(json);
-          setError(undefined);
-        }
-      } catch (statusError) {
-        if (!cancelled) {
-          setError(
-            statusError instanceof Error
-              ? statusError.message
-              : "Unable to load control-plane status.",
-          );
-          setStatus(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void load();
-
     return () => {
-      cancelled = true;
+      mountedRef.current = false;
     };
   }, []);
+
+  const refresh = useCallback(async (options?: { silent?: boolean }) => {
+    try {
+      if (!options?.silent) {
+        setLoading(true);
+      }
+      const response = await fetch("/api/frontier/status", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error("Unable to load control-plane status.");
+      }
+
+      const json = (await response.json()) as FrontierStatusSnapshot;
+      if (mountedRef.current) {
+        setStatus(json);
+        setError(undefined);
+      }
+      return json;
+    } catch (statusError) {
+      if (mountedRef.current) {
+        setError(
+          statusError instanceof Error
+            ? statusError.message
+            : "Unable to load control-plane status.",
+        );
+        setStatus(null);
+      }
+      throw statusError;
+    } finally {
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (options?.auto === false) {
+      setLoading(false);
+      return;
+    }
+
+    void refresh().catch(() => undefined);
+  }, [options?.auto, refresh]);
 
   const readiness = useMemo(() => {
     if (!status) {
@@ -120,5 +148,5 @@ export function useFrontierStatus() {
     };
   }, [status]);
 
-  return { status, loading, error, readiness };
+  return { status, loading, error, readiness, refresh };
 }

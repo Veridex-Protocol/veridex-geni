@@ -172,7 +172,7 @@ export function getFrontierConfig(): FrontierIntegrationConfig {
       network:
         process.env.FRONTIER_VERIDEX_NETWORK === "mainnet" ? "mainnet" : "testnet",
       relayerUrl: process.env.FRONTIER_RELAYER_URL,
-      relayerApiKey: process.env.FRONTIER_RELAYER_API_KEY,
+      relayerApiKey: process.env.FRONTIER_RELAYER_API_KEY || undefined,
       masterCredential: undefined,
       allowedChains: parseAllowedChains(process.env.FRONTIER_ALLOWED_CHAINS, [10004]),
       dailyLimitUsd: parseNumber(process.env.FRONTIER_DAILY_LIMIT_USD, 50),
@@ -187,7 +187,7 @@ export function getFrontierConfig(): FrontierIntegrationConfig {
       rpcUrl:
         process.env.FRONTIER_ERC8004_RPC_URL ??
         "https://sepolia.base.org",
-      privateKey: process.env.FRONTIER_ERC8004_PRIVATE_KEY,
+      privateKey: process.env.FRONTIER_ERC8004_PRIVATE_KEY || undefined,
       minReputationScore: parseNumber(process.env.FRONTIER_MIN_REPUTATION_SCORE, 85),
       explorerBaseUrl:
         process.env.FRONTIER_ERC8004_EXPLORER_BASE_URL ??
@@ -286,18 +286,14 @@ export function getSponsorPathReadiness(
 ): SponsorPathReadiness {
   const missing: string[] = [];
   const hasRelayer = Boolean(config.veridex.relayerUrl);
-  const hasRelayerApiKey = Boolean(config.veridex.relayerApiKey);
-  const enterpriseAgentWalletReady = hasRelayer && hasRelayerApiKey;
+  const hasDedicatedErc8004Signer = Boolean(config.erc8004.privateKey);
+  const enterpriseAgentWalletReady = hasRelayer;
   const hasFacilitator = Boolean(
     config.paywall.facilitatorUrl || config.paywall.fallbackFacilitatorUrl,
   );
 
   if (!hasRelayer) {
     missing.push("FRONTIER_RELAYER_URL");
-  }
-
-  if (!hasRelayerApiKey) {
-    missing.push("FRONTIER_RELAYER_API_KEY");
   }
 
   const x402Ready =
@@ -317,11 +313,16 @@ export function getSponsorPathReadiness(
 
   const erc8004Ready =
     config.erc8004.enabled &&
-    Boolean(config.erc8004.privateKey) &&
+    (hasDedicatedErc8004Signer || enterpriseAgentWalletReady) &&
     Boolean(config.erc8004.rpcUrl);
 
   if (config.mode === "live" && !erc8004Ready) {
-    missing.push("FRONTIER_ERC8004_PRIVATE_KEY");
+    if (!config.erc8004.enabled) {
+      missing.push("FRONTIER_ERC8004_ENABLED");
+    }
+    if (!hasDedicatedErc8004Signer && !enterpriseAgentWalletReady) {
+      missing.push("FRONTIER_ERC8004_PRIVATE_KEY or authenticated enterprise session");
+    }
   }
 
   const coreProofReady =

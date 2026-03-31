@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { CheckCircle2, FileCheck2, ShieldCheck, Wallet } from "lucide-react";
 import { useFrontierAuth } from "@/components/frontierguard/auth-provider";
+import { useFrontierStatus } from "@/components/frontierguard/use-frontier-status";
 import { StatusPill } from "@/components/frontierguard/workspace-primitives";
 
 function truncateMiddle(value: string, start = 8, end = 6): string {
@@ -18,17 +19,64 @@ function truncateMiddle(value: string, start = 8, end = 6): string {
 export default function SessionInitializedPage() {
   const auth = useFrontierAuth();
   const router = useRouter();
+  const { status, loading, refresh } = useFrontierStatus({ auto: false });
 
   useEffect(() => {
-    if (auth.ready && !auth.session) {
-      router.replace("/login");
+    if (!auth.ready) {
+      return;
     }
-  }, [auth.ready, auth.session, router]);
+
+    let active = true;
+    let retryTimer: number | undefined;
+
+    const hydrate = async (attempt = 0) => {
+      const restoredSession =
+        auth.session ?? (await auth.refreshSession({ silent: true }).catch(() => null));
+
+      if (!active) {
+        return;
+      }
+
+      if (!restoredSession) {
+        router.replace("/login");
+        return;
+      }
+
+      const snapshot = await refresh({ silent: true }).catch(() => null);
+      if (!active) {
+        return;
+      }
+
+      const runtimeBound = Boolean(snapshot?.runtime.available);
+      const signerBound = snapshot?.runtimeHealth.signerSource === "session_wallet";
+
+      if (!runtimeBound && !signerBound && attempt < 4) {
+        retryTimer = window.setTimeout(() => {
+          void hydrate(attempt + 1);
+        }, 900);
+      }
+    };
+
+    void hydrate();
+
+    return () => {
+      active = false;
+      if (retryTimer) {
+        window.clearTimeout(retryTimer);
+      }
+    };
+  }, [auth.ready, auth.refreshSession, auth.session, refresh, router]);
 
   const session = auth.session;
   const profile = session
     ? auth.storedProfiles.find((item) => item.credentialId === session.passkeyCredentialId)
     : null;
+  const runtimeBound = Boolean(status?.runtime.available);
+  const sessionSignerBound = status?.runtimeHealth.signerSource === "session_wallet";
+  const liveProofReady = Boolean(
+    status?.runtimeHealth.liveWriteReady && status?.runtimeHealth.livePaymentReady,
+  );
+  const leadWarning = status?.runtimeHealth.warnings[0];
 
   if (!session) {
     return null;
@@ -73,6 +121,72 @@ export default function SessionInitializedPage() {
                   {session.credentialCount ?? auth.storedProfiles.length}
                 </p>
               </div>
+            </div>
+
+            <div className="mt-6 rounded-3xl border border-white/6 bg-black/15 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+                    Operational proof
+                  </p>
+                  <p className="mt-2 text-sm text-zinc-400">
+                    This screen confirms that the passkey ceremony is usable by the runtime, not just locally cached in the browser.
+                  </p>
+                </div>
+                <StatusPill
+                  label={
+                    runtimeBound || sessionSignerBound
+                      ? "Operational"
+                      : loading
+                        ? "Checking"
+                        : "Pending"
+                  }
+                  tone={
+                    runtimeBound || sessionSignerBound
+                      ? "ready"
+                      : loading
+                        ? "waiting"
+                        : "warning"
+                  }
+                />
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="workspace-subpanel rounded-2xl p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+                    Cookie session
+                  </p>
+                  <p className="mt-3 text-sm font-semibold text-white">
+                    {session.sessionId ? "Verified" : "Unresolved"}
+                  </p>
+                </div>
+                <div className="workspace-subpanel rounded-2xl p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+                    Runtime wallet
+                  </p>
+                  <p className="mt-3 text-sm font-semibold text-white">
+                    {runtimeBound ? "Bound" : loading ? "Checking" : "Pending"}
+                  </p>
+                </div>
+                <div className="workspace-subpanel rounded-2xl p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+                    Signer source
+                  </p>
+                  <p className="mt-3 text-sm font-semibold text-white">
+                    {sessionSignerBound
+                      ? "Session wallet"
+                      : status?.runtimeHealth.signerSource === "erc8004_private_key"
+                        ? "Dedicated key"
+                        : loading
+                          ? "Checking"
+                          : "Unavailable"}
+                  </p>
+                </div>
+              </div>
+
+              {leadWarning ? (
+                <p className="mt-4 text-sm text-amber-300">{leadWarning}</p>
+              ) : null}
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -121,6 +235,14 @@ export default function SessionInitializedPage() {
                 </p>
                 <p>
                   <span className="text-zinc-500">Network status:</span> {session.networkStatus}
+                </p>
+                <p>
+                  <span className="text-zinc-500">Runtime bound:</span>{" "}
+                  {runtimeBound ? "yes" : loading ? "checking" : "no"}
+                </p>
+                <p>
+                  <span className="text-zinc-500">Live proof posture:</span>{" "}
+                  {liveProofReady ? "fully funded" : "session-ready, funding still required"}
                 </p>
               </div>
             </div>

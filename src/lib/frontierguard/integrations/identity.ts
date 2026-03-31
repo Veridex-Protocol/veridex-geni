@@ -9,6 +9,10 @@ import {
   getFrontierConfig,
   getRequestOrigin,
 } from "@/lib/frontierguard/integrations/config";
+import {
+  getEnterpriseAgentSigner,
+  getEnterpriseRuntimeHealth,
+} from "@/lib/frontierguard/integrations/runtime";
 import { durationMsSince, getRequestContext } from "@/lib/frontierguard/observability";
 import { pinArtifact } from "@/lib/frontierguard/integrations/storage";
 import {
@@ -19,6 +23,7 @@ import {
   persistRuntimeError,
   persistToolInvocation,
 } from "@/lib/frontierguard/repository";
+import { resolveFrontierSessionLocator } from "@/lib/frontierguard/session";
 
 const IDENTITY_REGISTRY_ABI = [
   "function register(string agentURI) returns (uint256)",
@@ -142,9 +147,46 @@ function parseTransferTokenId(
   return null;
 }
 
+async function resolveOnchainSigner(
+  request?: Request,
+): Promise<ethers.Wallet> {
+  const config = getFrontierConfig();
+  const provider = new ethers.JsonRpcProvider(config.erc8004.rpcUrl);
+
+  if (config.erc8004.privateKey) {
+    return new ethers.Wallet(config.erc8004.privateKey, provider);
+  }
+
+  if (request) {
+    const sessionSigner = await getEnterpriseAgentSigner(
+      resolveFrontierSessionLocator(request),
+    );
+
+    if (sessionSigner) {
+      return sessionSigner.connect(provider);
+    }
+  }
+
+  throw new Error(
+    "ERC-8004 live signing requires FRONTIER_ERC8004_PRIVATE_KEY or an authenticated enterprise session.",
+  );
+}
+
+async function assertLiveWriteReady(request: Request): Promise<void> {
+  const health = await getEnterpriseRuntimeHealth(resolveFrontierSessionLocator(request));
+
+  if (!health.liveWriteReady) {
+    throw new Error(
+      health.warnings[0] ??
+        "Live ERC-8004 signing path does not have enough gas for an onchain write.",
+    );
+  }
+}
+
 async function registerOnChain(
   registrationFileUri: string,
   operatorWallet: string,
+  signer: ethers.Signer,
 ): Promise<{
   agentId: bigint;
   txHash: string;
@@ -152,12 +194,10 @@ async function registerOnChain(
 }> {
   const config = getFrontierConfig();
 
-  if (!config.erc8004.enabled || !config.erc8004.privateKey) {
+  if (!config.erc8004.enabled) {
     throw new Error("ERC-8004 live registration is not configured.");
   }
 
-  const provider = new ethers.JsonRpcProvider(config.erc8004.rpcUrl);
-  const signer = new ethers.Wallet(config.erc8004.privateKey, provider);
   const addresses = getERC8004Addresses(config.erc8004.testnet);
   const contract = new ethers.Contract(addresses.identityRegistry, IDENTITY_REGISTRY_ABI, signer);
   const tx = await contract["register(string,tuple(string,string)[])"](
@@ -243,7 +283,16 @@ export async function registerFrontierAgent(
       throw new Error("Demo mode uses deterministic registration artifacts.");
     }
 
-    const onchain = await registerOnChain(registrationFileUri, input.operatorWallet);
+    if (config.mode === "live") {
+      await assertLiveWriteReady(request);
+    }
+
+    const signer = await resolveOnchainSigner(request);
+    const onchain = await registerOnChain(
+      registrationFileUri,
+      input.operatorWallet,
+      signer,
+    );
     const canonicalUAI = `eip155:${config.erc8004.testnet ? "84532" : "8453"}:${addresses.identityRegistry}:${onchain.agentId.toString()}`;
 
     const result = {
@@ -474,12 +523,15 @@ export async function buildWellKnownRegistration(request: Request) {
   );
 }
 
-export async function submitFrontierFeedback(input: {
-  agentId?: string;
-  rating: number;
-  notes: string;
-  missionId: string;
-}): Promise<{
+export async function submitFrontierFeedback(
+  request: Request,
+  input: {
+    agentId?: string;
+    rating: number;
+    notes: string;
+    missionId: string;
+  },
+): Promise<{
   txHash: string;
   explorerUrl: string;
   updatedScore: number;
@@ -505,12 +557,16 @@ export async function submitFrontierFeedback(input: {
   });
 
   try {
-    if (config.mode === "demo" || !config.erc8004.enabled || !config.erc8004.privateKey || numericAgentId == null) {
+    if (config.mode === "demo" || !config.erc8004.enabled || numericAgentId == null) {
       throw new Error("Using deterministic reputation feedback path.");
     }
 
+    if (config.mode === "live") {
+      await assertLiveWriteReady(request);
+    }
+
     const provider = new ethers.JsonRpcProvider(config.erc8004.rpcUrl);
-    const signer = new ethers.Wallet(config.erc8004.privateKey, provider);
+    const signer = await resolveOnchainSigner(request);
     const addresses = getERC8004Addresses(config.erc8004.testnet);
     const contract = new ethers.Contract(addresses.reputationRegistry, REPUTATION_REGISTRY_ABI, signer);
     const normalizedScore = Math.round((input.rating / 5) * 10000);
@@ -538,7 +594,7 @@ export async function submitFrontierFeedback(input: {
     );
     await tx.wait();
 
-    const reputationClient = new ReputationClient(provider, signer, {
+    const reputationClient = new ReputationClient(provider, signer.connect(provider), {
       testnet: config.erc8004.testnet,
     });
     const summary = await reputationClient.getSummary(numericAgentId, []);

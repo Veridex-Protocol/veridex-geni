@@ -8,8 +8,10 @@ import {
 import {
   createContext,
   useContext,
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -45,6 +47,7 @@ interface FrontierAuthContextValue {
   storedProfiles: StoredPasskeyProfile[];
   registerPasskey: (options: Required<AuthMutationOptions>) => Promise<FrontierSession>;
   signInWithPasskey: () => Promise<FrontierSession>;
+  refreshSession: (options?: { silent?: boolean }) => Promise<FrontierSession | null>;
   signOut: () => void;
   clearError: () => void;
 }
@@ -68,6 +71,12 @@ interface SerializedPasskeyCredential {
   keyHash: string;
   publicKeyX: string;
   publicKeyY: string;
+}
+
+interface AuthSessionApiResponse {
+  authenticated: boolean;
+  session: Omit<FrontierSession, "credentialCount"> | null;
+  error?: string;
 }
 
 const FrontierAuthContext = createContext<FrontierAuthContextValue | null>(null);
@@ -237,6 +246,58 @@ export function FrontierAuthProvider({ children }: { children: ReactNode }) {
   const [isSupported, setIsSupported] = useState(false);
   const [platformAuthenticatorAvailable, setPlatformAuthenticatorAvailable] = useState(false);
   const [storedProfiles, setStoredProfiles] = useState<StoredPasskeyProfile[]>([]);
+  const sessionRef = useRef<FrontierSession | null>(null);
+
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
+
+  const refreshSession = useCallback(
+    async (options?: { silent?: boolean }): Promise<FrontierSession | null> => {
+      const fallbackSession = sessionRef.current ?? loadStoredSession();
+
+      try {
+        const response = await fetch("/api/frontier/auth/session", {
+          cache: "no-store",
+        });
+        const json = (await response.json()) as AuthSessionApiResponse;
+
+        if (!response.ok) {
+          throw new Error(json.error ?? "Unable to refresh the operator session.");
+        }
+
+        const nextSession =
+          json.authenticated && json.session
+            ? {
+                ...json.session,
+                credentialCount: sdk.passkey.getAllStoredCredentials().length,
+              }
+            : options?.silent && fallbackSession
+              ? fallbackSession
+              : null;
+
+        saveStoredSession(nextSession);
+        setSession(nextSession);
+        setError(undefined);
+        return nextSession;
+      } catch (sessionError) {
+        if (options?.silent && fallbackSession) {
+          setSession(fallbackSession);
+          return fallbackSession;
+        }
+
+        if (!options?.silent) {
+          setError(
+            sessionError instanceof Error
+              ? sessionError.message
+              : "Unable to refresh the operator session.",
+          );
+        }
+        throw sessionError;
+      }
+    },
+    [sdk],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -274,6 +335,7 @@ export function FrontierAuthProvider({ children }: { children: ReactNode }) {
           }),
         );
         setReady(true);
+        void refreshSession({ silent: true }).catch(() => undefined);
       }
     };
 
@@ -282,7 +344,7 @@ export function FrontierAuthProvider({ children }: { children: ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, [sdk]);
+  }, [refreshSession, sdk]);
 
   async function registerPasskey(options: Required<AuthMutationOptions>): Promise<FrontierSession> {
     setBusy(true);
@@ -383,6 +445,7 @@ export function FrontierAuthProvider({ children }: { children: ReactNode }) {
     void fetch("/api/frontier/auth/logout", {
       method: "POST",
     }).catch(() => undefined);
+    setError(undefined);
     setSession(null);
     saveStoredSession(null);
   }
@@ -403,6 +466,7 @@ export function FrontierAuthProvider({ children }: { children: ReactNode }) {
         storedProfiles,
         registerPasskey,
         signInWithPasskey,
+        refreshSession,
         signOut,
         clearError,
       }}

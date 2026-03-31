@@ -7,7 +7,7 @@ trait IFrontierPrivateIntent<TState> {
 
 #[starknet::contract]
 mod FrontierPrivateIntent {
-    use starknet::storage::{Map, StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
 
     #[storage]
     struct Storage {

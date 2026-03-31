@@ -59,6 +59,7 @@ export default function ActiveMissionPage() {
   const secondaryRailTransactions = mission.execution.chainTransactions.filter(
     (item) => item.rail !== "immediate",
   );
+  const runtimeHealth = status?.runtimeHealth;
 
   return (
     <FrontierShell
@@ -240,6 +241,51 @@ export default function ActiveMissionPage() {
           </WorkspaceSection>
 
           <div className="space-y-6">
+            {runtimeHealth ? (
+              <WorkspaceSection eyebrow="Live Proof Checklist" title="Judge-critical runtime health">
+                <div className="grid gap-3">
+                  <div className="workspace-subpanel rounded-3xl p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold text-white">Signer path</p>
+                      <StatusPill
+                        label={
+                          runtimeHealth.signerSource === "session_wallet"
+                            ? "Session signer"
+                            : runtimeHealth.signerSource === "erc8004_private_key"
+                              ? "Dedicated signer"
+                              : "Unavailable"
+                        }
+                        tone={runtimeHealth.available ? "ready" : "warning"}
+                      />
+                    </div>
+                  </div>
+                  <div className="workspace-subpanel rounded-3xl p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold text-white">ERC-8004 write</p>
+                      <StatusPill
+                        label={runtimeHealth.liveWriteReady ? "Ready" : "Gas required"}
+                        tone={runtimeHealth.liveWriteReady ? "ready" : "warning"}
+                      />
+                    </div>
+                  </div>
+                  <div className="workspace-subpanel rounded-3xl p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold text-white">x402 payment</p>
+                      <StatusPill
+                        label={runtimeHealth.livePaymentReady ? "Ready" : "Asset required"}
+                        tone={runtimeHealth.livePaymentReady ? "ready" : "warning"}
+                      />
+                    </div>
+                  </div>
+                  {runtimeHealth.warnings.length ? (
+                    <div className="rounded-3xl border border-amber-500/20 bg-amber-500/8 p-4 text-sm leading-6 text-amber-100">
+                      {runtimeHealth.warnings[0]}
+                    </div>
+                  ) : null}
+                </div>
+              </WorkspaceSection>
+            ) : null}
+
             <WithHelp id="operator-escalation" text="Policy-violation handler. Allows the human-in-the-loop to override or block actions exceeding the budget.">
               <WorkspaceSection eyebrow="Incident Workflow" title="Escalations Center">
                 {openDispute ? (

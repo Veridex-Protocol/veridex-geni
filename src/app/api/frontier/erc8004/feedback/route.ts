@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       notes: string;
     };
 
-    const result = await submitFrontierFeedback({
+    const result = await submitFrontierFeedback(request, {
       missionId: body.missionId,
       agentId: body.agentId,
       rating: body.rating,

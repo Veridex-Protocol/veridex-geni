@@ -7,7 +7,7 @@ export function createServerFrontierSdk() {
   return createSDK(config.veridex.chain, {
     network: config.veridex.network,
     relayerUrl: config.veridex.relayerUrl,
-    relayerApiKey: config.veridex.relayerApiKey,
+    relayerApiKey: config.veridex.relayerApiKey || undefined,
   });
 }
 

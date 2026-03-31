@@ -233,6 +233,39 @@ Used for evidence pinning and durable artifact linkage.
 
 Used for private-intent commitments in the secondary privacy rail.
 
+## Deployed Contracts
+
+FrontierGuard's multi-rail architecture spans several chains. All contracts are deployed on testnets.
+
+### Starknet Sepolia
+
+| Contract | Address |
+|---|---|
+| **FrontierPrivateIntent** | [`0x03c407bd3861645e12411249f91cdffdf899c7c6db475c666026b99dd810e1c7`](https://sepolia.voyager.online/contract/0x03c407bd3861645e12411249f91cdffdf899c7c6db475c666026b99dd810e1c7) |
+| Class Hash | `0x54d656b6384c28a9dc23090685409fc56a9d82df43c91f7fe9f08bfe7d94888` |
+
+Commit-reveal contract for private intent commitments. Agents commit hashed intents on-chain, then reveal them after execution, creating a verifiable record of private routing decisions.
+
+### Flow Testnet
+
+| Contract | Address |
+|---|---|
+| **FrontierMissionHandler** | `A.0ae53cb6e3f42a79.FrontierMissionHandler` |
+
+Scheduled transaction handler for consumer DeFi rails and agent settlement workflows.
+
+### Base Sepolia (EVM)
+
+| Asset | Address |
+|---|---|
+| USDC | [`0x036CbD53842c5426634e7929541eC2318f3dCF7e`](https://sepolia.basescan.org/token/0x036CbD53842c5426634e7929541eC2318f3dCF7e) |
+
+Used for x402-compatible agentic payment flows and ERC-8004 identity registration via the Base Sepolia RPC.
+
+### Zama fhEVM (Ethereum Sepolia)
+
+Zama contracts (`ConfidentialPolicyVault`, `ConfidentialExecutor`) use Ethereum Sepolia as the host chain. Contract addresses are configured via environment variables after deployment with Foundry (`forge script`). See `contracts/zama/` for source.
+
 ## Data Model
 
 FrontierGuard persists more than just the latest mission snapshot. The system also records:
@@ -333,4 +366,4 @@ FrontierGuard is implemented as a real application, not just a design mock:
 - receipts and audit records are stored
 - protocol integrations exist for the primary trust-and-payment path
 
-The default repo does **not** ship fully live credentials. To run the full testnet proof path, the required Base Sepolia and relayer configuration must be supplied through `.env.local`.
+The default repo does **not** ship fully live credentials. To run the full testnet proof path, the required Base Sepolia and relayer configuration must be supplied through `.env.local`. The relayer API key is optional when your relayer accepts unsigned traffic, and live ERC-8004 writes can now use either a dedicated Base Sepolia signer or the authenticated enterprise session signer.

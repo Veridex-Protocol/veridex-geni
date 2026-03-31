@@ -28,6 +28,47 @@ function compactHash(value?: string | null, head = 12, tail = 8): string {
   return `${value.slice(0, head)}...${value.slice(-tail)}`;
 }
 
+interface ResearchSourceView {
+  title: string;
+  url: string;
+}
+
+function readResearchBundle(content: unknown): {
+  summary?: string;
+  model?: string;
+  searchQueries: string[];
+  sources: ResearchSourceView[];
+} {
+  const value = content as {
+    summary?: unknown;
+    model?: unknown;
+    searchQueries?: unknown;
+    sources?: unknown;
+  };
+
+  const searchQueries = Array.isArray(value?.searchQueries)
+    ? value.searchQueries.filter((item): item is string => typeof item === "string")
+    : [];
+  const sources = Array.isArray(value?.sources)
+    ? value.sources.filter(
+        (item): item is ResearchSourceView =>
+          typeof item === "object" &&
+          item !== null &&
+          "title" in item &&
+          "url" in item &&
+          typeof (item as { title?: unknown }).title === "string" &&
+          typeof (item as { url?: unknown }).url === "string",
+      )
+    : [];
+
+  return {
+    summary: typeof value?.summary === "string" ? value.summary : undefined,
+    model: typeof value?.model === "string" ? value.model : undefined,
+    searchQueries,
+    sources,
+  };
+}
+
 export default function ReceiptsEvidencePage() {
   const { mission, receiptText, summaryText, copyArtifact, exportArtifact } = useFrontierGuard();
   const { status, readiness } = useFrontierStatus();
@@ -39,6 +80,12 @@ export default function ReceiptsEvidencePage() {
   const privateReceipts = mission.execution.chainTransactions.filter((item) => item.rail === "private");
   const filecoinReady = pinnedArtifacts.some((artifact) => Boolean(artifact.cid));
   const storachaReady = mission.memory.some((record) => Boolean(record.cid));
+  const latestResearchRecord = [...mission.memory]
+    .reverse()
+    .find((record) => record.type === "research");
+  const latestResearchBundle = latestResearchRecord
+    ? readResearchBundle(latestResearchRecord.content)
+    : { searchQueries: [], sources: [] };
 
   return (
     <FrontierShell
@@ -225,6 +272,59 @@ export default function ReceiptsEvidencePage() {
               </div>
             </ReceiptGroup>
 
+            {latestResearchRecord ? (
+              <ReceiptGroup eyebrow="Research" title="Grounded citations and reasoning trail">
+                <div className="workspace-subpanel rounded-3xl p-5">
+                  <dl>
+                    <FieldRow
+                      label="Research memory"
+                      value={latestResearchRecord.title}
+                      tone={latestResearchRecord.cid ? "success" : "warning"}
+                    />
+                    <FieldRow
+                      label="Model"
+                      value={latestResearchBundle.model ?? "Unavailable"}
+                    />
+                    <FieldRow
+                      label="Source count"
+                      value={String(latestResearchBundle.sources.length)}
+                      tone={latestResearchBundle.sources.length > 0 ? "success" : "warning"}
+                    />
+                    <FieldRow
+                      label="Search queries"
+                      value={String(latestResearchBundle.searchQueries.length)}
+                    />
+                  </dl>
+                  {latestResearchBundle.summary ? (
+                    <p className="mt-4 text-sm leading-6 text-zinc-300">
+                      {latestResearchBundle.summary}
+                    </p>
+                  ) : null}
+                  {latestResearchBundle.sources.length ? (
+                    <div className="mt-4 space-y-3">
+                      {latestResearchBundle.sources.map((source) => (
+                        <a
+                          key={source.url}
+                          href={source.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="workspace-subpanel workspace-hover flex items-center justify-between gap-4 rounded-2xl p-4"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-semibold text-white">{source.title}</p>
+                            <p className="mt-1 truncate font-mono text-xs text-zinc-500">
+                              {source.url}
+                            </p>
+                          </div>
+                          <ArrowUpRight className="h-4 w-4 shrink-0 text-cyan-300" />
+                        </a>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </ReceiptGroup>
+            ) : null}
+
             <ReceiptGroup eyebrow="Evidence" title="Artifacts and storage anchors">
               <div className="grid gap-4 lg:grid-cols-2">
                 {mission.artifacts.map((artifact) => (
@@ -307,6 +407,39 @@ export default function ReceiptsEvidencePage() {
           </div>
 
           <div className="space-y-6">
+            <WorkspaceSection eyebrow="Judge Bundle" title="Download the exact proof artifacts">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => exportArtifact("manifest")}
+                  className="workspace-button-secondary rounded-xl px-4 py-3 text-left text-sm font-semibold"
+                >
+                  Download agent.json
+                </button>
+                <button
+                  type="button"
+                  onClick={() => exportArtifact("log")}
+                  className="workspace-button-secondary rounded-xl px-4 py-3 text-left text-sm font-semibold"
+                >
+                  Download agent_log.json
+                </button>
+                <button
+                  type="button"
+                  onClick={() => exportArtifact("summary")}
+                  className="workspace-button-secondary rounded-xl px-4 py-3 text-left text-sm font-semibold"
+                >
+                  Download mission_summary.md
+                </button>
+                <button
+                  type="button"
+                  onClick={() => exportArtifact("receipt")}
+                  className="workspace-button-primary rounded-xl px-4 py-3 text-left text-sm font-semibold"
+                >
+                  Download receipt_bundle.json
+                </button>
+              </div>
+            </WorkspaceSection>
+
             <WorkspaceSection
               eyebrow="Bundle Summary"
               title="Mission summary"

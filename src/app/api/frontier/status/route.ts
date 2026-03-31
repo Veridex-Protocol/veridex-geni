@@ -3,7 +3,10 @@ import {
   getFrontierConfig,
   getSponsorPathReadiness,
 } from "@/lib/frontierguard/integrations/config";
-import { getEnterpriseAgentSnapshot } from "@/lib/frontierguard/integrations/runtime";
+import {
+  getEnterpriseAgentSnapshot,
+  getEnterpriseRuntimeHealth,
+} from "@/lib/frontierguard/integrations/runtime";
 import { resolveFrontierSessionLocator } from "@/lib/frontierguard/session";
 import { isDatabaseConfigured } from "@/lib/db";
 
@@ -16,6 +19,19 @@ export async function GET(request: Request) {
     session: null,
     identity: null,
   }));
+  const runtimeHealth = await getEnterpriseRuntimeHealth(locator).catch(() => ({
+    available: false,
+    signerSource: "unavailable" as const,
+    walletAddress: null,
+    paywallNetwork: config.paywall.network,
+    paywallAsset: "",
+    paywallAmountUsd: config.paywall.amountUsd,
+    x402Ready: sponsorPath.x402Ready,
+    erc8004Ready: sponsorPath.erc8004Ready,
+    livePaymentReady: false,
+    liveWriteReady: false,
+    warnings: ["Unable to load runtime health."],
+  }));
 
   return NextResponse.json({
     mode: config.mode,
@@ -23,7 +39,7 @@ export async function GET(request: Request) {
       veridexSdk: true,
       agentSdk: true,
       passkeyCredentialLoaded: snapshot.available,
-      erc8004WriteEnabled: config.erc8004.enabled && !!config.erc8004.privateKey,
+      erc8004WriteEnabled: config.erc8004.enabled && sponsorPath.erc8004Ready,
       x402Ready: sponsorPath.x402Ready,
       starknetReady: sponsorPath.starknetReady,
       storachaWriteEnabled: config.storacha.enabled,
@@ -41,5 +57,6 @@ export async function GET(request: Request) {
       starknetSecondaryReady: sponsorPath.starknetReady,
     },
     runtime: snapshot,
+    runtimeHealth,
   });
 }
