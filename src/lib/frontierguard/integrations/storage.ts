@@ -42,16 +42,21 @@ interface StoreMemoryOptions {
 async function pinViaPinata(payload: unknown, artifact: string): Promise<PinArtifactResult> {
   const config = getFrontierConfig();
 
-  if (!config.filecoin.gateway || !config.filecoin.apiKey) {
-    throw new Error("Pinata is not configured. Set FRONTIER_PINATA_GATEWAY and FRONTIER_PINATA_API_KEY.");
+  if (!config.filecoin.gateway || (!config.filecoin.jwt && !config.filecoin.apiKey)) {
+    throw new Error("Pinata is not configured. Set FRONTIER_PINATA_GATEWAY and FRONTIER_PINATA_JWT (or FRONTIER_PINATA_API_KEY + FRONTIER_PINATA_API_SECRET).");
+  }
+
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (config.filecoin.jwt) {
+    headers.Authorization = `Bearer ${config.filecoin.jwt}`;
+  } else if (config.filecoin.apiKey && config.filecoin.apiSecret) {
+    headers.pinata_api_key = config.filecoin.apiKey;
+    headers.pinata_secret_api_key = config.filecoin.apiSecret;
   }
 
   const response = await fetch(`${config.filecoin.gateway}/pinning/pinJSONToIPFS`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.filecoin.apiKey}`,
-    },
+    headers,
     body: JSON.stringify({
       pinataContent: payload,
       pinataMetadata: { name: artifact },

@@ -44,6 +44,8 @@ export interface FrontierIntegrationConfig {
     provider: "demo" | "pinata" | "storacha";
     gateway?: string;
     apiKey?: string;
+    apiSecret?: string;
+    jwt?: string;
     networkLabel: string;
   };
   storacha: {
@@ -196,6 +198,8 @@ export function getFrontierConfig(): FrontierIntegrationConfig {
       provider: pinataEnabled ? "pinata" : storachaEnabled ? "storacha" : "demo",
       gateway: process.env.FRONTIER_PINATA_GATEWAY,
       apiKey: process.env.FRONTIER_PINATA_API_KEY,
+      apiSecret: process.env.FRONTIER_PINATA_API_SECRET,
+      jwt: process.env.FRONTIER_PINATA_JWT,
       networkLabel: pinataEnabled
         ? "Pinata IPFS Pinning"
         : storachaEnabled
