@@ -77,11 +77,14 @@ function extractJsonObject(text: string): string {
   const objectStart = cleaned.indexOf("{");
   const objectEnd = cleaned.lastIndexOf("}");
 
-  if (objectStart >= 0 && objectEnd > objectStart) {
-    return cleaned.slice(objectStart, objectEnd + 1);
-  }
+  const raw =
+    objectStart >= 0 && objectEnd > objectStart
+      ? cleaned.slice(objectStart, objectEnd + 1)
+      : cleaned;
 
-  return cleaned;
+  // Sanitize literal control characters (0x00–0x1F, except allowed whitespace)
+  // that Gemini sometimes emits unescaped inside string values.
+  return raw.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
 }
 
 function extractResponseText(payload: unknown): string {
@@ -203,7 +206,8 @@ async function callGeminiGenerateContent(
       tools: [{ google_search: {} }],
       generationConfig: {
         temperature: 0.15,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 4096,
+        responseMimeType: "application/json",
       },
     }),
   });
