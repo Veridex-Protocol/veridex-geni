@@ -359,6 +359,20 @@ function logRepositoryFallback(scope: string, error: unknown): void {
   console.warn(`[frontierguard] ${scope} skipped persistence. ${detail}`);
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`[${label}] timed out after ${ms}ms`));
+    }, ms);
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      (e) => { clearTimeout(timer); reject(e); },
+    );
+  });
+}
+
+const DB_OPERATION_TIMEOUT_MS = 8_000;
+
 async function withRepositorySql<T>(
   scope: string,
   fallback: T,
@@ -369,12 +383,12 @@ async function withRepositorySql<T>(
   }
 
   try {
-    const sql = await ensureDatabaseReady();
+    const sql = await withTimeout(ensureDatabaseReady(), DB_OPERATION_TIMEOUT_MS, `${scope}/connect`);
     if (!sql) {
       return fallback;
     }
 
-    return await operation(sql);
+    return await withTimeout(operation(sql), DB_OPERATION_TIMEOUT_MS, `${scope}/query`);
   } catch (error) {
     logRepositoryFallback(scope, error);
     return fallback;

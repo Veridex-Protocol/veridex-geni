@@ -38,8 +38,22 @@ function AwaitingSignatureScreen() {
   >("arming");
   const [localError, setLocalError] = useState<string>();
   const [verificationDetail, setVerificationDetail] = useState<string>();
-  const hasStartedRef = useRef(false);
   const hasRedirectedRef = useRef(false);
+
+  // Keep a ref to the in-flight ceremony promise so that React StrictMode
+  // double-mount doesn't kill the first run and then skip the second
+  // (because hasStartedRef would already be true). Instead, the second
+  // mount simply awaits the same promise that the first mount created.
+  const ceremonyPromiseRef = useRef<Promise<FrontierSession> | null>(null);
+
+  // Stabilize auth callbacks in refs so the effect doesn't re-run when
+  // the auth provider re-renders (signInWithPasskey / registerPasskey
+  // are not memoized and get new references every render, which kills
+  // the in-flight run() via the effect cleanup setting active = false).
+  const signInRef = useRef(auth.signInWithPasskey);
+  signInRef.current = auth.signInWithPasskey;
+  const registerRef = useRef(auth.registerPasskey);
+  registerRef.current = auth.registerPasskey;
 
   const verifyOperationalSession = useCallback(async () => {
     let lastWarning =
@@ -91,26 +105,31 @@ function AwaitingSignatureScreen() {
   }, [phase, router]);
 
   useEffect(() => {
-    if (!auth.ready || hasStartedRef.current || missingRegistrationFields) {
+    if (!auth.ready || missingRegistrationFields) {
       return;
     }
 
     let active = true;
-    hasStartedRef.current = true;
 
     const run = async () => {
       setPhase("waiting");
       setVerificationDetail(undefined);
 
       try {
-        const nextSession =
-          action === "register"
-            ? await auth.registerPasskey({
-                username,
-                displayName,
-                passkeyLabel: "",
-              })
-            : await auth.signInWithPasskey();
+        // Reuse an in-flight ceremony promise if one already exists (handles
+        // React StrictMode double-mount without opening two passkey dialogs).
+        if (!ceremonyPromiseRef.current) {
+          ceremonyPromiseRef.current =
+            action === "register"
+              ? registerRef.current({
+                  username,
+                  displayName,
+                  passkeyLabel: "",
+                })
+              : signInRef.current();
+        }
+
+        const nextSession = await ceremonyPromiseRef.current;
 
         if (!active) {
           return;
@@ -147,20 +166,21 @@ function AwaitingSignatureScreen() {
         if (!result.ok) {
           setPhase("error");
           setLocalError(result.error);
-          hasStartedRef.current = false;
+          ceremonyPromiseRef.current = null;
           return;
         }
 
         setVerificationDetail(result.detail);
         setPhase("success");
       } catch (error) {
+        ceremonyPromiseRef.current = null;
+
         if (!active) {
           return;
         }
 
         setPhase("error");
         setLocalError(error instanceof Error ? error.message : "Passkey request failed.");
-        hasStartedRef.current = false;
       }
     };
 
@@ -172,9 +192,6 @@ function AwaitingSignatureScreen() {
   }, [
     action,
     auth.ready,
-    auth.refreshSession,
-    auth.registerPasskey,
-    auth.signInWithPasskey,
     displayName,
     missingRegistrationFields,
     username,
