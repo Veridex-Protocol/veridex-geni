@@ -38,6 +38,7 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to synchronize shared memory.";
+    console.error("[storacha/memory] ERROR:", message, error instanceof Error ? error.stack?.split("\n").slice(0, 4).join("\n") : "");
 
     await Promise.all([
       persistAuditEvent({

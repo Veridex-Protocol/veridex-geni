@@ -7,6 +7,7 @@ import { CheckCircle2, Fingerprint, Loader2, ShieldCheck } from "lucide-react";
 import { useFrontierAuth } from "@/components/frontierguard/auth-provider";
 import { useFrontierStatus } from "@/components/frontierguard/use-frontier-status";
 import { StatusPill } from "@/components/frontierguard/workspace-primitives";
+import type { FrontierSession } from "@/lib/frontierguard/types";
 
 function wait(durationMs: number) {
   return new Promise<void>((resolve) => {

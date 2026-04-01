@@ -234,14 +234,32 @@ export async function storeSharedMemory(
     let result: MemorySyncResult;
 
     if (config.storacha.enabled) {
-      const uploaded = await uploadJsonToStoracha(`${label}.json`, payload);
-      result = {
-        cid: uploaded.cid,
-        ucanDelegation: uploaded.proofCid ?? uploaded.spaceDid,
-        network: config.storacha.networkLabel,
-        provider: "storacha",
-        live: true,
-      };
+      try {
+        const uploaded = await uploadJsonToStoracha(`${label}.json`, payload);
+        result = {
+          cid: uploaded.cid,
+          ucanDelegation: uploaded.proofCid ?? uploaded.spaceDid,
+          network: config.storacha.networkLabel,
+          provider: "storacha",
+          live: true,
+        };
+      } catch (storachaError) {
+        if (config.mode !== "live") {
+          console.warn(
+            `[storeSharedMemory] Storacha upload failed, falling back to demo: ${storachaError instanceof Error ? storachaError.message : String(storachaError)}`,
+          );
+          const cid = fakeCid({ scope: "storacha-memory", label, payload });
+          result = {
+            cid,
+            ucanDelegation: `ucan:${fakeTxHash({ scope: "ucan-delegation", label, payload }).slice(2, 26)}`,
+            network: config.storacha.networkLabel,
+            provider: "demo",
+            live: false,
+          };
+        } else {
+          throw storachaError;
+        }
+      }
     } else {
       const cid = fakeCid({ scope: "storacha-memory", label, payload });
 
