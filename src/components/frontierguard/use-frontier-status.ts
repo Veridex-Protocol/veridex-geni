@@ -117,6 +117,12 @@ export function useFrontierStatus(options?: { auto?: boolean }) {
     }
 
     void refresh().catch(() => undefined);
+
+    const interval = setInterval(() => {
+      void refresh({ silent: true }).catch(() => undefined);
+    }, 10_000);
+
+    return () => clearInterval(interval);
   }, [options?.auto, refresh]);
 
   const readiness = useMemo(() => {
