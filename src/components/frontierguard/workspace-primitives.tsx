@@ -164,7 +164,7 @@ export function FieldRow({
       <dt className="text-sm text-zinc-500">{label}</dt>
       <dd
         className={cn(
-          "max-w-[60%] text-right text-sm font-medium",
+          "max-w-[60%] text-right text-sm font-medium break-all",
           tone === "success"
             ? "text-emerald-300"
             : tone === "warning"

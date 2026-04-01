@@ -138,66 +138,73 @@ export default function ReceiptsEvidencePage() {
           <MetricCard
             label="Trust Readiness"
             value={readiness.erc8004Ready ? "READY" : "BLOCKED"}
-            helper={mission.identity.erc8004Identity}
+            helper={compactHash(mission.identity.erc8004Identity, 10, 8)}
             tone={readiness.erc8004Ready ? "success" : "warning"}
           />
         </section>
 
+        <WorkspaceSection
+          eyebrow="Trust Surface"
+          title="Primary receipt posture"
+          description="The best-bet sponsor path should be undeniable here: settlement, identity, and evidence all point back to the same mission."
+        >
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="workspace-subpanel rounded-3xl p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-3">
+                  <Wallet className="h-5 w-5 text-cyan-400" />
+                  <p className="font-semibold text-white">x402 Settlement</p>
+                </div>
+                <div className="mt-4">
+                  <StatusPill
+                    label={verifiedLivePayments.length > 0 ? "Verified live" : "Pending"}
+                    tone={verifiedLivePayments.length > 0 ? "ready" : "warning"}
+                  />
+                </div>
+                <p className="mt-4 text-sm leading-relaxed text-zinc-400">
+                  Payment receipts are attached directly to the mission and exported with the final bundle.
+                </p>
+              </div>
+            </div>
+            <div className="workspace-subpanel rounded-3xl p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="h-5 w-5 text-emerald-400" />
+                  <p className="font-semibold text-white">ERC-8004</p>
+                </div>
+                <div className="mt-4">
+                  <StatusPill
+                    label={readiness.erc8004Ready ? "Ready" : "Waiting"}
+                    tone={readiness.erc8004Ready ? "ready" : "warning"}
+                  />
+                </div>
+                <p className="mt-4 text-sm leading-relaxed text-zinc-400">
+                  Identity and feedback receipts are grouped here instead of forcing a separate trust workflow.
+                </p>
+              </div>
+            </div>
+            <div className="workspace-subpanel rounded-3xl p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-3">
+                  <FileArchive className="h-5 w-5 text-cyan-400" />
+                  <p className="font-semibold text-white">Evidence Vault</p>
+                </div>
+                <div className="mt-4">
+                  <StatusPill
+                    label={filecoinReady ? "Pinned" : "Pending"}
+                    tone={filecoinReady ? "ready" : "warning"}
+                  />
+                </div>
+                <p className="mt-4 text-sm leading-relaxed text-zinc-400">
+                  Receipt bundles and manifests stay attached to evidence storage only after the core path is already coherent.
+                </p>
+              </div>
+            </div>
+          </div>
+        </WorkspaceSection>
+
         <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-6">
-            <WorkspaceSection
-              eyebrow="Trust Surface"
-              title="Primary receipt posture"
-              description="The best-bet sponsor path should be undeniable here: settlement, identity, and evidence all point back to the same mission."
-            >
-              <div className="grid gap-4 lg:grid-cols-3">
-                <div className="workspace-subpanel rounded-3xl p-5">
-                  <div className="flex items-center gap-3">
-                    <Wallet className="h-5 w-5 text-cyan-400" />
-                    <p className="font-semibold text-white">x402 Settlement</p>
-                  </div>
-                  <div className="mt-4">
-                    <StatusPill
-                      label={verifiedLivePayments.length > 0 ? "Verified live" : "Pending"}
-                      tone={verifiedLivePayments.length > 0 ? "ready" : "warning"}
-                    />
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-zinc-400">
-                    Payment receipts are attached directly to the mission and exported with the final bundle.
-                  </p>
-                </div>
-                <div className="workspace-subpanel rounded-3xl p-5">
-                  <div className="flex items-center gap-3">
-                    <ShieldCheck className="h-5 w-5 text-emerald-400" />
-                    <p className="font-semibold text-white">ERC-8004</p>
-                  </div>
-                  <div className="mt-4">
-                    <StatusPill
-                      label={readiness.erc8004Ready ? "Ready" : "Waiting"}
-                      tone={readiness.erc8004Ready ? "ready" : "warning"}
-                    />
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-zinc-400">
-                    Identity and feedback receipts are grouped here instead of forcing a separate trust workflow.
-                  </p>
-                </div>
-                <div className="workspace-subpanel rounded-3xl p-5">
-                  <div className="flex items-center gap-3">
-                    <FileArchive className="h-5 w-5 text-cyan-400" />
-                    <p className="font-semibold text-white">Evidence Vault</p>
-                  </div>
-                  <div className="mt-4">
-                    <StatusPill
-                      label={filecoinReady ? "Pinned" : "Pending"}
-                      tone={filecoinReady ? "ready" : "warning"}
-                    />
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-zinc-400">
-                    Receipt bundles and manifests stay attached to evidence storage only after the core path is already coherent.
-                  </p>
-                </div>
-              </div>
-            </WorkspaceSection>
 
             <ReceiptGroup eyebrow="Payments" title="Settlement receipts">
               {paymentReceipts.length > 0 ? (
@@ -256,7 +263,7 @@ export default function ReceiptsEvidencePage() {
             <ReceiptGroup eyebrow="Trust" title="Identity and reputation receipts">
               <div className="workspace-subpanel rounded-3xl p-5">
                 <dl>
-                  <FieldRow label="ERC-8004 Identity" value={mission.identity.erc8004Identity} />
+                  <FieldRow label="ERC-8004 Identity" value={compactHash(mission.identity.erc8004Identity, 20, 16)} />
                   <FieldRow
                     label="Registration Tx"
                     value={compactHash(mission.identity.registrationTxHash)}
@@ -326,84 +333,41 @@ export default function ReceiptsEvidencePage() {
             ) : null}
 
             <ReceiptGroup eyebrow="Evidence" title="Artifacts and storage anchors">
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2">
                 {mission.artifacts.map((artifact) => (
-                  <div key={artifact.id} className="workspace-subpanel rounded-3xl p-4">
+                  <div key={artifact.id} className="workspace-subpanel flex flex-col rounded-3xl p-5">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-semibold text-white">{artifact.name}</p>
-                          <StatusPill
-                            label={artifact.status}
-                            tone={artifact.status === "pinned" ? "ready" : "warning"}
-                          />
-                        </div>
-                        <p className="mt-2 text-sm text-zinc-400">{artifact.description}</p>
-                        <div className="mt-4 space-y-1 text-xs text-zinc-500">
-                          <p>{artifact.cid ? `CID: ${compactHash(artifact.cid)}` : "CID pending"}</p>
-                          <p>{artifact.txHash ? `Tx: ${compactHash(artifact.txHash)}` : "Tx pending"}</p>
-                        </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-white truncate">{artifact.name}</p>
+                        <p className="mt-2 text-sm text-zinc-400 line-clamp-2">{artifact.description}</p>
                       </div>
-                      <Link
-                        href={artifact.route}
-                        className="inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-cyan-300"
-                      >
-                        Open
-                        <ArrowUpRight className="h-4 w-4" />
-                      </Link>
+                      <StatusPill
+                        label={artifact.status}
+                        tone={artifact.status === "pinned" ? "ready" : "warning"}
+                      />
+                    </div>
+                    
+                    <div className="mt-4 flex flex-col justify-between flex-1">
+                      <div className="space-y-1 font-mono text-[10px] text-zinc-500">
+                        <p className="truncate">CID: {artifact.cid ? compactHash(artifact.cid, 8, 6) : "pending"}</p>
+                        <p className="truncate">Tx: {artifact.txHash ? compactHash(artifact.txHash, 8, 6) : "pending"}</p>
+                      </div>
+                      
+                      <div className="mt-4 flex items-center justify-end">
+                        <Link
+                          href={artifact.route}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-300 hover:text-cyan-200 transition-colors"
+                        >
+                          Open Proof
+                          <ArrowUpRight className="h-3.5 w-3.5" />
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             </ReceiptGroup>
 
-            {(privateReceipts.length > 0 || filecoinReady || storachaReady) ? (
-              <ReceiptGroup eyebrow="Secondary Modules" title="Conditionally attached proofs">
-                <div className="grid gap-4 lg:grid-cols-3">
-                  <div className="workspace-subpanel rounded-3xl p-4">
-                    <p className="font-semibold text-white">Starknet</p>
-                    <div className="mt-3">
-                      <StatusPill
-                        label={privateReceipts.length > 0 ? "Attached" : status?.sponsorPath.starknetReady ? "Configured" : "Waiting"}
-                        tone={
-                          privateReceipts.length > 0
-                            ? "ready"
-                            : status?.sponsorPath.starknetReady
-                              ? "warning"
-                              : "warning"
-                        }
-                      />
-                    </div>
-                    <p className="mt-3 text-sm text-zinc-400">
-                      {privateReceipts.length > 0
-                        ? `${privateReceipts.length} private intent receipt(s) attached to this mission.`
-                        : "Private intent remains secondary until the primary path is already strong."}
-                    </p>
-                  </div>
-                  <div className="workspace-subpanel rounded-3xl p-4">
-                    <p className="font-semibold text-white">Filecoin</p>
-                    <div className="mt-3">
-                      <StatusPill label={filecoinReady ? "Pinned" : "Waiting"} tone={filecoinReady ? "ready" : "warning"} />
-                    </div>
-                    <p className="mt-3 text-sm text-zinc-400">
-                      Durable evidence is present only when mission artifacts have real storage anchors.
-                    </p>
-                  </div>
-                  <div className="workspace-subpanel rounded-3xl p-4">
-                    <div className="flex items-center gap-3">
-                      <Database className="h-5 w-5 text-emerald-400" />
-                      <p className="font-semibold text-white">Storacha</p>
-                    </div>
-                    <div className="mt-3">
-                      <StatusPill label={storachaReady ? "Attached" : "Waiting"} tone={storachaReady ? "ready" : "warning"} />
-                    </div>
-                    <p className="mt-3 text-sm text-zinc-400">
-                      Shared memory records appear here once they have durable storage references.
-                    </p>
-                  </div>
-                </div>
-              </ReceiptGroup>
-            ) : null}
           </div>
 
           <div className="space-y-6">
@@ -453,7 +417,7 @@ export default function ReceiptsEvidencePage() {
                 </button>
               }
             >
-              <div className="rounded-3xl border border-white/6 bg-zinc-950/70 p-5 font-mono text-xs leading-6 text-zinc-300">
+              <div className="max-h-[280px] overflow-y-auto rounded-3xl border border-white/6 bg-zinc-950/70 p-5 font-mono text-xs leading-6 text-zinc-300 scrollbar-thin scrollbar-thumb-zinc-800">
                 <pre className="whitespace-pre-wrap">{summaryText}</pre>
               </div>
             </WorkspaceSection>
@@ -466,6 +430,60 @@ export default function ReceiptsEvidencePage() {
             />
           </div>
         </section>
+
+        {(privateReceipts.length > 0 || filecoinReady || storachaReady) ? (
+          <ReceiptGroup eyebrow="Secondary Modules" title="Conditionally attached proofs">
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="workspace-subpanel rounded-3xl p-5 flex flex-col justify-between">
+                <div>
+                  <p className="font-semibold text-white">Starknet</p>
+                  <div className="mt-4">
+                    <StatusPill
+                      label={privateReceipts.length > 0 ? "Attached" : status?.sponsorPath.starknetReady ? "Configured" : "Waiting"}
+                      tone={
+                        privateReceipts.length > 0
+                          ? "ready"
+                          : status?.sponsorPath.starknetReady
+                            ? "warning"
+                            : "warning"
+                      }
+                    />
+                  </div>
+                  <p className="mt-4 text-sm leading-relaxed text-zinc-400">
+                    {privateReceipts.length > 0
+                      ? `${privateReceipts.length} private intent receipt(s) attached to this mission.`
+                      : "Private intent remains secondary until the primary path is already strong."}
+                  </p>
+                </div>
+              </div>
+              <div className="workspace-subpanel rounded-3xl p-5 flex flex-col justify-between">
+                <div>
+                  <p className="font-semibold text-white">Filecoin</p>
+                  <div className="mt-3">
+                    <StatusPill label={filecoinReady ? "Pinned" : "Waiting"} tone={filecoinReady ? "ready" : "warning"} />
+                  </div>
+                  <p className="mt-3 text-sm text-zinc-400">
+                    Durable evidence is present only when mission artifacts have real storage anchors.
+                  </p>
+                </div>
+              </div>
+              <div className="workspace-subpanel rounded-3xl p-5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <Database className="h-5 w-5 text-emerald-400" />
+                    <p className="font-semibold text-white">Storacha</p>
+                  </div>
+                  <div className="mt-4">
+                    <StatusPill label={storachaReady ? "Attached" : "Waiting"} tone={storachaReady ? "ready" : "warning"} />
+                  </div>
+                  <p className="mt-3 text-sm text-zinc-400">
+                    Shared memory records appear here once they have durable storage references.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </ReceiptGroup>
+        ) : null}
       </div>
     </FrontierShell>
   );

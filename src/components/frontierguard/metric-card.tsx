@@ -15,13 +15,13 @@ const toneClassName: Record<NonNullable<MetricCardProps["tone"]>, string> = {
 
 export function MetricCard({ label, value, helper, tone = "default" }: MetricCardProps) {
   return (
-    <div className="group relative overflow-hidden rounded-[24px] border border-zinc-800/80 bg-zinc-950/40 p-6 backdrop-blur-xl shadow-lg transition-all duration-500 hover:border-zinc-700 hover:bg-zinc-900/60 hover:-translate-y-1">
+    <div className="group relative min-w-0 overflow-hidden rounded-[24px] border border-zinc-800/80 bg-zinc-950/40 p-6 backdrop-blur-xl shadow-lg transition-all duration-500 hover:border-zinc-700 hover:bg-zinc-900/60 hover:-translate-y-1">
       <div className="absolute -inset-x-0 -top-10 h-20 bg-gradient-to-b from-white/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
       <p className="relative z-10 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 group-hover:text-zinc-400 transition-colors">{label}</p>
       <p className={`relative z-10 mt-3 text-3xl font-light tracking-tight ${toneClassName[tone]}`}>
         {value}
       </p>
-      {helper ? <p className="relative z-10 mt-3 text-xs text-zinc-500 font-mono tracking-tight">{helper}</p> : null}
+      {helper ? <p className="relative z-10 mt-3 text-xs text-zinc-500 font-mono tracking-tight truncate">{helper}</p> : null}
     </div>
   );
 }
